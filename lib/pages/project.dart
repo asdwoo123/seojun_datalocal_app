@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProjectPage extends StatefulWidget {
   const ProjectPage({Key? key}) : super(key: key);
@@ -14,12 +15,29 @@ class ProjectPage extends StatefulWidget {
 class _ProjectPageState extends State<ProjectPage> {
   String _projectName = '';
   String _connectIp = '';
-  List<Map<String, dynamic>> _stationData = [];
+  List<dynamic> _stationData = [];
+  Map<String, dynamic> _userMap = {};
 
-  void _connectStation() async {
+  void _getUser() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userPref = prefs.getString('user');
+    if (userPref != null) {
+      setState(() {
+        _userMap = jsonDecode(userPref) as Map<String, dynamic>;
+      });
+    }
+  }
+
+  @override
+  void initState() {
+    _getUser();
+    super.initState();
+  }
+
+  void _connectStation(StateSetter _setState) async {
     var res = await http.read(Uri.parse('http://192.168.0.48:3000/setting'));
     var parsed = json.decode(res);
-    this.setState(() {
+    _setState(() {
       _stationData = parsed['data'];
     });
   }
@@ -34,11 +52,16 @@ class _ProjectPageState extends State<ProjectPage> {
           shrinkWrap: true,
           children: _stationData.map((v) {
             var name = v['name'] as String;
-            return TextField(
-              decoration: InputDecoration(
-                  border: OutlineInputBorder(),
-                  labelText: name),
-            );
+            var value = v['value'] as bool;
+            return Row(children: [
+              Text(name),
+              Spacer(),
+              Checkbox(value: value, onChanged: (value) {
+                setState(() {
+                  value = value;
+                });
+              })
+            ],);
           }).toList(),
         ),
       );
@@ -50,62 +73,81 @@ class _ProjectPageState extends State<ProjectPage> {
   }
 
   void _showDialog() {
+    setState(() {
+      _stationData = [];
+    });
     showDialog(
         context: context,
         barrierDismissible: false,
         builder: (BuildContext context) {
-          return AlertDialog(
-            title: Text('새 프로젝트'),
-            content: SingleChildScrollView(
-              child: ListBody(
-                children: <Widget>[
-                  Text('이름'),
-                  Container(
-                    decoration: BoxDecoration(),
-                    child: TextFormField(
-                      decoration: InputDecoration(
-                        hintText: 'Enter the station name',
-                        /*border: const OutlineInputBorder(
-                      borderSide: BorderSide.none
-                    )*/
-                      ),
-                    ),
-                  ),
-                  SizedBox(
-                    height: 20,
-                  ),
-                  Text('연결 아이피'),
-                  Row(
-                    children: [
-                      Flexible(
-                        flex: 2,
-                        child: Container(
-                          decoration: BoxDecoration(),
-                          child: TextFormField(
-                            decoration: InputDecoration(
-                                hintText: 'Enter the connect ip'),
+          return StatefulBuilder(
+            builder: (BuildContext context, StateSetter setState) {
+              return AlertDialog(
+                title: Text('새 프로젝트'),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10.0)
+                ),
+                content: SingleChildScrollView(
+                  child: ListBody(
+                    children: <Widget>[
+                      Text('이름'),
+                      Container(
+                        decoration: BoxDecoration(),
+                        child: TextFormField(
+                          decoration: InputDecoration(
+                            hintText: 'Enter the station name',
+                            /*border: const OutlineInputBorder(
+                        borderSide: BorderSide.none
+                      )*/
                           ),
                         ),
                       ),
-                      const SizedBox(
-                        width: 10,
+                      SizedBox(
+                        height: 20,
                       ),
-                      Flexible(
-                          flex: 1,
-                          child: ElevatedButton(
-                              onPressed: _connectStation,
-                              child: Center(
-                                child: Text('연결'),
-                              )))
+                      Text('연결 아이피'),
+                      Row(
+                        children: [
+                          Flexible(
+                            flex: 2,
+                            child: Container(
+                              decoration: BoxDecoration(),
+                              child: TextFormField(
+                                decoration: InputDecoration(
+                                    hintText: 'Enter the connect ip'),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(
+                            width: 10,
+                          ),
+                          Flexible(
+                              flex: 1,
+                              child: ElevatedButton(
+                                  onPressed: () {
+                                    _connectStation(setState);
+                                  },
+                                  child: Center(
+                                    child: Text('연결'),
+                                  )))
+                        ],
+                      ),
+                      const SizedBox(
+                        height: 16,
+                      ),
+                      _showWid(),
+                      SizedBox(height: 10,),
+                      Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+                        TextButton(onPressed: () {}, child: Text('저장')),
+                        TextButton(onPressed: () {
+                          Navigator.of(context).pop();
+                        }, child: Text('취소')),
+                      ],)
                     ],
                   ),
-                  const SizedBox(
-                    height: 16,
-                  ),
-                  _showWid()
-                ],
-              ),
-            ),
+                ),
+              );
+            },
           );
         });
   }
@@ -122,6 +164,20 @@ class _ProjectPageState extends State<ProjectPage> {
               TextButton(onPressed: _showDialog, child: const Text('설비 등록')),
             ],
           ),
+          SizedBox(height: 20,),
+          ListView(
+            scrollDirection: Axis.vertical,
+            shrinkWrap: true,
+            children: _userMap['project'].map<Widget>((pj) {
+            String stationName = pj['stationName'];
+            return Row(
+              children: [
+                Checkbox(value: true, onChanged: (value) {}),
+                SizedBox(width: 20,),
+                Text(stationName)
+              ],
+            );
+          }).toList(),),
         ],
       ),
     );
