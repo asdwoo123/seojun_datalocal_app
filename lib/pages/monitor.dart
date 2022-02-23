@@ -2,6 +2,9 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:socket_io_client/socket_io_client.dart' as IO;
+
+import '../model/Station.dart';
 
 class MonitorPage extends StatefulWidget {
   const MonitorPage({Key? key}) : super(key: key);
@@ -11,17 +14,26 @@ class MonitorPage extends StatefulWidget {
 }
 
 class _MonitorPageState extends State<MonitorPage> {
-  Map<String, dynamic> _userMap = {};
+  List<Station> _projects = [];
+  List<IO.Socket> sockets = [];
 
   void _getUser() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? userPref = prefs.getString('user');
     if (userPref != null) {
-      setState(() {
-        _userMap = jsonDecode(userPref) as Map<String, dynamic>;
-      });
+      var userInfo = jsonDecode(userPref);
+      List<Station> projects = [];
+      userInfo['project'].forEach((project) {
+        var station = Station.fromJson(project);
+        projects.add(station);
 
-      List<String, dynamic> project = _userMap['project'].map((pr) => pr as Map<String, dynamic>).toList();
+        IO.Socket socket = IO.io('http://192.168.0.48:3000', <String, dynamic>{
+          'transports': ['websocket']
+        });
+      });
+      setState(() {
+        _projects = projects;
+      });
     }
   }
 
@@ -32,7 +44,30 @@ class _MonitorPageState extends State<MonitorPage> {
   }
 
   @override
+  void dispose() {
+    // TODO: implement dispose
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Container();
+    return Padding(
+      padding: const EdgeInsets.all(15.0),
+      child: ListView(
+        children: _projects.map<Widget>((station) {
+          return Card(
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                children: [
+                  Text(station.stationName),
+                  const SizedBox(height: 20,),
+                ],
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
   }
 }

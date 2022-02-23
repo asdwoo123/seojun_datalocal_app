@@ -13,10 +13,12 @@ class ProjectPage extends StatefulWidget {
 }
 
 class _ProjectPageState extends State<ProjectPage> {
-  String _projectName = '';
+  String _stationName = '';
   String _connectIp = '';
   List<dynamic> _stationData = [];
-  Map<String, dynamic> _userMap = {};
+  bool _activate = true;
+  bool _create = true;
+  Map<String, dynamic> _userMap = {'project': []};
 
   void _getUser() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -28,6 +30,24 @@ class _ProjectPageState extends State<ProjectPage> {
     }
   }
 
+  void _saveStation() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    Map<String, dynamic> stationInfo = {
+      'stationName': _stationName,
+      'connectIp': _connectIp,
+      'activate': _activate,
+      'stationData': _stationData
+    };
+
+    
+    await prefs.setString('user', jsonEncode(_userMap));
+    Navigator.of(context).pop();
+  }
+
+  void _saveProject() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+  }
+
   @override
   void initState() {
     _getUser();
@@ -35,7 +55,7 @@ class _ProjectPageState extends State<ProjectPage> {
   }
 
   void _connectStation(StateSetter _setState) async {
-    var res = await http.read(Uri.parse('http://192.168.0.48:3000/setting'));
+    var res = await http.read(Uri.parse('http://'+ _connectIp +'/setting'));
     var parsed = json.decode(res);
     _setState(() {
       _stationData = parsed['data'];
@@ -43,8 +63,6 @@ class _ProjectPageState extends State<ProjectPage> {
   }
 
   Widget _showWid() {
-    if (_stationData.length > 0)
-    {
       return Container(
         width: double.maxFinite,
         child: ListView(
@@ -65,11 +83,7 @@ class _ProjectPageState extends State<ProjectPage> {
           }).toList(),
         ),
       );
-    }
-    else
-    {
-      return Container();
-    }
+
   }
 
   void _showDialog() {
@@ -100,6 +114,9 @@ class _ProjectPageState extends State<ProjectPage> {
                         borderSide: BorderSide.none
                       )*/
                           ),
+                          onChanged: (value) {
+                            _stationName = value;
+                          },
                         ),
                       ),
                       SizedBox(
@@ -115,6 +132,9 @@ class _ProjectPageState extends State<ProjectPage> {
                               child: TextFormField(
                                 decoration: InputDecoration(
                                     hintText: 'Enter the connect ip'),
+                                onChanged: (value) {
+                                  _connectIp = value;
+                                },
                               ),
                             ),
                           ),
