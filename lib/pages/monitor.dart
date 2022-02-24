@@ -15,7 +15,7 @@ class MonitorPage extends StatefulWidget {
 
 class _MonitorPageState extends State<MonitorPage> {
   List<Station> _projects = [];
-  List<IO.Socket> sockets = [];
+  List<IO.Socket> _sockets = [];
 
   void _getUser() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -25,11 +25,33 @@ class _MonitorPageState extends State<MonitorPage> {
       List<Station> projects = [];
       userInfo['project'].forEach((project) {
         var station = Station.fromJson(project);
-        projects.add(station);
 
-        IO.Socket socket = IO.io('http://192.168.0.48:3000', <String, dynamic>{
+        IO.Socket socket = IO.io('http://' + station.connectIp, <String, dynamic>{
           'transports': ['websocket']
         });
+        _sockets.add(socket);
+
+        Map<String, dynamic> value = {};
+        station.stationInfo.forEach((stationData) {
+          if (stationData.type == 'int') {
+            value[stationData.name] = '0';
+          }
+          if (stationData.type == 'float') {
+            value[stationData.name] = '0.0';
+          }
+          if (stationData.type == 'string') {
+            value[stationData.name] = '';
+          }
+          if (stationData.type == 'bool') {
+            value[stationData.name] = 'true';
+          }
+
+          socket.on(stationData.name, (v) {
+            print(stationData.name);
+          });
+        });
+        station.data = value;
+        projects.add(station);
       });
       setState(() {
         _projects = projects;
@@ -45,7 +67,7 @@ class _MonitorPageState extends State<MonitorPage> {
 
   @override
   void dispose() {
-    // TODO: implement dispose
+    _sockets.forEach((s) { s.disconnect(); });
     super.dispose();
   }
 
@@ -62,6 +84,16 @@ class _MonitorPageState extends State<MonitorPage> {
                 children: [
                   Text(station.stationName),
                   const SizedBox(height: 20,),
+                  ListView(
+                    scrollDirection: Axis.vertical,
+                    shrinkWrap: true,
+                    children: station.stationInfo.map<Widget>((stationData) {
+                      return Row(children: [
+                        Text(stationData.name),
+                        Spacer(),
+                        Text(station.data[stationData.name])
+                      ],);
+                    }).toList(),)
                 ],
               ),
             ),

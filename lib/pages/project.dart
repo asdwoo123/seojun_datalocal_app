@@ -1,8 +1,10 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
+import 'package:seojun_datalocal_app/theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ProjectPage extends StatefulWidget {
@@ -14,10 +16,10 @@ class ProjectPage extends StatefulWidget {
 
 class _ProjectPageState extends State<ProjectPage> {
   String _stationName = '';
-  String _connectIp = '';
+  String _connectIp = '192.168.0.48:3000';
   List<dynamic> _stationData = [];
-  bool _activate = true;
   bool _create = true;
+  String title = '새 프로젝트';
   Map<String, dynamic> _userMap = {'project': []};
 
   void _getUser() async {
@@ -30,22 +32,48 @@ class _ProjectPageState extends State<ProjectPage> {
     }
   }
 
+  void _deleteStation(dynamic station) async {
+    var stationIndex = _userMap['project'].indexOf(station);
+    setState(() {
+      _userMap['project'].removeAt(stationIndex);
+    });
+  }
+
   void _saveStation() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
+    if (_stationName == '') {
+      Fluttertoast.showToast(
+        msg: '이름을 입력해주세요.',
+      );
+      return;
+    }
+    if (_create) {
+      for (var station in _userMap['project']) {
+        if (_stationName == station['stationName']) {
+          Fluttertoast.showToast(
+            msg: '이미 존재하는 이름입니다.',
+          );
+          return;
+        }
+      }
+    }
+
     Map<String, dynamic> stationInfo = {
       'stationName': _stationName,
       'connectIp': _connectIp,
-      'activate': _activate,
       'stationData': _stationData
     };
-
-    
-    await prefs.setString('user', jsonEncode(_userMap));
+    setState(() {
+      _userMap['project'].add(stationInfo);
+    });
     Navigator.of(context).pop();
   }
 
   void _saveProject() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('user', jsonEncode(_userMap));
+    Fluttertoast.showToast(
+      msg: '저장되었습니다.',
+    );
   }
 
   @override
@@ -55,41 +83,18 @@ class _ProjectPageState extends State<ProjectPage> {
   }
 
   void _connectStation(StateSetter _setState) async {
-    var res = await http.read(Uri.parse('http://'+ _connectIp +'/setting'));
+    var res = await http.read(Uri.parse('http://' + _connectIp + '/setting'));
     var parsed = json.decode(res);
     _setState(() {
       _stationData = parsed['data'];
     });
   }
 
-  Widget _showWid() {
-      return Container(
-        width: double.maxFinite,
-        child: ListView(
-          scrollDirection: Axis.vertical,
-          shrinkWrap: true,
-          children: _stationData.map((v) {
-            var name = v['name'] as String;
-            var value = v['value'] as bool;
-            return Row(children: [
-              Text(name),
-              Spacer(),
-              Checkbox(value: value, onChanged: (value) {
-                setState(() {
-                  value = value;
-                });
-              })
-            ],);
-          }).toList(),
-        ),
-      );
-
-  }
-
   void _showDialog() {
     setState(() {
       _stationData = [];
     });
+
     showDialog(
         context: context,
         barrierDismissible: false,
@@ -97,10 +102,9 @@ class _ProjectPageState extends State<ProjectPage> {
           return StatefulBuilder(
             builder: (BuildContext context, StateSetter setState) {
               return AlertDialog(
-                title: Text('새 프로젝트'),
+                title: Text(title),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10.0)
-                ),
+                    borderRadius: BorderRadius.circular(10.0)),
                 content: SingleChildScrollView(
                   child: ListBody(
                     children: <Widget>[
@@ -110,9 +114,10 @@ class _ProjectPageState extends State<ProjectPage> {
                         child: TextFormField(
                           decoration: InputDecoration(
                             hintText: 'Enter the station name',
-                            /*border: const OutlineInputBorder(
-                        borderSide: BorderSide.none
-                      )*/
+                            /*border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(width: 1, color: textWhiteGrey)
+                            )*/
                           ),
                           onChanged: (value) {
                             _stationName = value;
@@ -155,14 +160,45 @@ class _ProjectPageState extends State<ProjectPage> {
                       const SizedBox(
                         height: 16,
                       ),
-                      _showWid(),
-                      SizedBox(height: 10,),
-                      Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-                        TextButton(onPressed: () {}, child: Text('저장')),
-                        TextButton(onPressed: () {
-                          Navigator.of(context).pop();
-                        }, child: Text('취소')),
-                      ],)
+                      Container(
+                        width: double.maxFinite,
+                        child: ListView(
+                          scrollDirection: Axis.vertical,
+                          shrinkWrap: true,
+                          children: _stationData.map((v) {
+                            var name = v['name'] as String;
+                            var value = v['value'] as bool;
+                            return Row(
+                              children: [
+                                Text(name),
+                                Spacer(),
+                                Checkbox(
+                                    value: value,
+                                    onChanged: (bool? state) {
+                                      setState(() {
+                                        v['value'] = state!;
+                                      });
+                                    }),
+                              ],
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                      SizedBox(
+                        height: 10,
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                              onPressed: _saveStation, child: Text('저장')),
+                          TextButton(
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                              },
+                              child: Text('취소')),
+                        ],
+                      )
                     ],
                   ),
                 ),
@@ -180,24 +216,38 @@ class _ProjectPageState extends State<ProjectPage> {
         children: <Widget>[
           Row(
             children: <Widget>[
-              TextButton(onPressed: () {}, child: const Text('저장')),
-              TextButton(onPressed: _showDialog, child: const Text('설비 등록')),
+              TextButton(onPressed: _saveProject, child: const Text('저장')),
+              TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _create = true;
+                    });
+                    _showDialog();
+                  },
+                  child: const Text('설비 등록')),
             ],
           ),
-          SizedBox(height: 20,),
+          SizedBox(
+            height: 20,
+          ),
           ListView(
             scrollDirection: Axis.vertical,
             shrinkWrap: true,
             children: _userMap['project'].map<Widget>((pj) {
-            String stationName = pj['stationName'];
-            return Row(
-              children: [
-                Checkbox(value: true, onChanged: (value) {}),
-                SizedBox(width: 20,),
-                Text(stationName)
-              ],
-            );
-          }).toList(),),
+              String stationName = pj['stationName'];
+              return Row(
+                children: [
+                  Checkbox(value: true, onChanged: (value) {}),
+                  SizedBox(
+                    width: 20,
+                  ),
+                  Text(stationName),
+                  Spacer(),
+                  ElevatedButton(onPressed: () { _deleteStation(pj); }, child: Center(child: Text('del'),))
+                ],
+              );
+            }).toList(),
+          ),
         ],
       ),
     );
