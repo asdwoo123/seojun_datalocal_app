@@ -16,10 +16,11 @@ class ProjectPage extends StatefulWidget {
 
 class _ProjectPageState extends State<ProjectPage> {
   String _stationName = '';
-  String _connectIp = '192.168.0.48:3000';
+  String _connectIp = '';
   List<dynamic> _stationData = [];
   bool _create = true;
   String title = '새 프로젝트';
+  int _currentIndex = 0;
   Map<String, dynamic> _userMap = {'project': []};
 
   void _getUser() async {
@@ -30,6 +31,16 @@ class _ProjectPageState extends State<ProjectPage> {
         _userMap = jsonDecode(userPref) as Map<String, dynamic>;
       });
     }
+  }
+
+  void _findStation(Map<String, dynamic> project) {
+    setState(() {
+      _stationName = project['stationName'];
+      _connectIp = project['connectIp'];
+      _stationData = project['stationData'];
+    });
+
+      _currentIndex = _userMap['project'].indexOf(project);
   }
 
   void _deleteStation(dynamic station) async {
@@ -46,6 +57,14 @@ class _ProjectPageState extends State<ProjectPage> {
       );
       return;
     }
+
+    Map<String, dynamic> stationInfo = {
+      'stationName': _stationName,
+      'connectIp': _connectIp,
+      'activate': true,
+      'stationData': _stationData
+    };
+
     if (_create) {
       for (var station in _userMap['project']) {
         if (_stationName == station['stationName']) {
@@ -55,16 +74,17 @@ class _ProjectPageState extends State<ProjectPage> {
           return;
         }
       }
+
+      setState(() {
+        _userMap['project'].add(stationInfo);
+      });
+    } else {
+      setState(() {
+        _userMap['project'][_currentIndex] = stationInfo;
+      });
     }
 
-    Map<String, dynamic> stationInfo = {
-      'stationName': _stationName,
-      'connectIp': _connectIp,
-      'stationData': _stationData
-    };
-    setState(() {
-      _userMap['project'].add(stationInfo);
-    });
+
     Navigator.of(context).pop();
   }
 
@@ -92,6 +112,8 @@ class _ProjectPageState extends State<ProjectPage> {
 
   void _showDialog() {
     setState(() {
+      _stationName = '';
+      _connectIp = '';
       _stationData = [];
     });
 
@@ -108,26 +130,23 @@ class _ProjectPageState extends State<ProjectPage> {
                 content: SingleChildScrollView(
                   child: ListBody(
                     children: <Widget>[
-                      Text('이름'),
+                      const Text('이름'),
                       Container(
                         decoration: BoxDecoration(),
                         child: TextFormField(
-                          decoration: InputDecoration(
+                          decoration: const InputDecoration(
                             hintText: 'Enter the station name',
-                            /*border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(width: 1, color: textWhiteGrey)
-                            )*/
                           ),
+                          initialValue: _stationName,
                           onChanged: (value) {
                             _stationName = value;
                           },
                         ),
                       ),
-                      SizedBox(
+                      const SizedBox(
                         height: 20,
                       ),
-                      Text('연결 아이피'),
+                      const Text('연결 아이피'),
                       Row(
                         children: [
                           Flexible(
@@ -140,6 +159,7 @@ class _ProjectPageState extends State<ProjectPage> {
                                 onChanged: (value) {
                                   _connectIp = value;
                                 },
+                                initialValue: _connectIp,
                               ),
                             ),
                           ),
@@ -184,7 +204,7 @@ class _ProjectPageState extends State<ProjectPage> {
                           }).toList(),
                         ),
                       ),
-                      SizedBox(
+                      const SizedBox(
                         height: 10,
                       ),
                       Row(
@@ -216,6 +236,7 @@ class _ProjectPageState extends State<ProjectPage> {
         children: <Widget>[
           Row(
             children: <Widget>[
+              TextButton(onPressed: _getUser, child: const Text('초기화')),
               TextButton(onPressed: _saveProject, child: const Text('저장')),
               TextButton(
                   onPressed: () {
@@ -237,12 +258,24 @@ class _ProjectPageState extends State<ProjectPage> {
               String stationName = pj['stationName'];
               return Row(
                 children: [
-                  Checkbox(value: true, onChanged: (value) {}),
+                  Checkbox(value: pj['activate'], onChanged: (value) {
+                    setState(() {
+                      pj['activate'] = value;
+                    });
+                  }),
                   SizedBox(
                     width: 20,
                   ),
                   Text(stationName),
                   Spacer(),
+                  ElevatedButton(onPressed: () {
+                    setState(() {
+                      _create = false;
+                    });
+                    _showDialog();
+                    _findStation(pj);
+                  }, child: Center(child: Text('edit'),)),
+                  SizedBox(width: 10,),
                   ElevatedButton(onPressed: () { _deleteStation(pj); }, child: Center(child: Text('del'),))
                 ],
               );

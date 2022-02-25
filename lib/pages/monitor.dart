@@ -24,6 +24,7 @@ class _MonitorPageState extends State<MonitorPage> {
       var userInfo = jsonDecode(userPref);
       List<Station> projects = [];
       userInfo['project'].forEach((project) {
+        if (!project['activate']) return;
         var station = Station.fromJson(project);
 
         IO.Socket socket = IO.io('http://' + station.connectIp, <String, dynamic>{
@@ -32,7 +33,7 @@ class _MonitorPageState extends State<MonitorPage> {
         _sockets.add(socket);
 
         Map<String, dynamic> value = {};
-        station.stationInfo.forEach((stationData) {
+        station.stationInfo.where((stationData) => stationData.activate).forEach((stationData) {
           if (stationData.type == 'int') {
             value[stationData.name] = '0';
           }
@@ -47,7 +48,9 @@ class _MonitorPageState extends State<MonitorPage> {
           }
 
           socket.on(stationData.name, (v) {
-            print(stationData.name);
+            setState(() {
+              station.data[stationData.name] = v['data'].toString();
+            });
           });
         });
         station.data = value;
@@ -68,6 +71,7 @@ class _MonitorPageState extends State<MonitorPage> {
   @override
   void dispose() {
     _sockets.forEach((s) { s.disconnect(); });
+    _sockets = [];
     super.dispose();
   }
 
@@ -83,11 +87,13 @@ class _MonitorPageState extends State<MonitorPage> {
               child: Column(
                 children: [
                   Text(station.stationName),
+                  const SizedBox(height: 10,),
+                  Image(image: NetworkImage('https://via.placeholder.com/150')),
                   const SizedBox(height: 20,),
                   ListView(
                     scrollDirection: Axis.vertical,
                     shrinkWrap: true,
-                    children: station.stationInfo.map<Widget>((stationData) {
+                    children: station.stationInfo.where((e) => e.activate).map<Widget>((stationData) {
                       return Row(children: [
                         Text(stationData.name),
                         Spacer(),
