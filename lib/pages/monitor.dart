@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
+import 'package:flutter_mjpeg/flutter_mjpeg.dart';
 
 import '../model/Station.dart';
 
@@ -31,7 +32,6 @@ class _MonitorPageState extends State<MonitorPage> {
           'transports': ['websocket']
         });
         _sockets.add(socket);
-
         Map<String, dynamic> value = {};
         station.stationInfo.where((stationData) => stationData.activate).forEach((stationData) {
           if (stationData.type == 'int') {
@@ -48,9 +48,11 @@ class _MonitorPageState extends State<MonitorPage> {
           }
 
           socket.on(stationData.name, (v) {
-            setState(() {
-              station.data[stationData.name] = v['data'].toString();
-            });
+              if (mounted == true) {
+                setState(() {
+                  station.data[stationData.name] = v['data'].toString();
+                });
+              }
           });
         });
         station.data = value;
@@ -62,6 +64,12 @@ class _MonitorPageState extends State<MonitorPage> {
     }
   }
 
+  String _cameraUrl(String connectIp) {
+    var urlPort = int.parse(connectIp.substring(connectIp.length - 4)) + 1;
+    var cameraUrl = connectIp.substring(0, connectIp.length - 4) + urlPort.toString();
+    return 'http://' + cameraUrl + '?action=stream';
+  }
+
   @override
   void initState() {
     _getUser();
@@ -70,8 +78,8 @@ class _MonitorPageState extends State<MonitorPage> {
 
   @override
   void dispose() {
-    _sockets.forEach((s) { s.disconnect(); });
-    _sockets = [];
+    /*_sockets.forEach((s) { s.disconnect(); });
+    _sockets = [];*/
     super.dispose();
   }
 
@@ -88,7 +96,7 @@ class _MonitorPageState extends State<MonitorPage> {
                 children: [
                   Text(station.stationName),
                   const SizedBox(height: 10,),
-                  Image(image: NetworkImage('https://via.placeholder.com/150')),
+                  Mjpeg(isLive: true, stream: _cameraUrl(station.connectIp)),
                   const SizedBox(height: 20,),
                   ListView(
                     scrollDirection: Axis.vertical,
