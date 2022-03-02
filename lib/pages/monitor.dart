@@ -4,8 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:flutter_mjpeg/flutter_mjpeg.dart';
+import 'package:http/http.dart' as http;
 
 import '../model/Station.dart';
+
+GlobalKey _mjpegKey = GlobalKey();
 
 class MonitorPage extends StatefulWidget {
   const MonitorPage({Key? key}) : super(key: key);
@@ -17,6 +20,44 @@ class MonitorPage extends StatefulWidget {
 class _MonitorPageState extends State<MonitorPage> {
   List<Station> _projects = [];
   List<IO.Socket> _sockets = [];
+
+  void _handleTouchStart(LongPressStartDetails details, String connectIp) {
+    var size = _getSize(_mjpegKey);
+    var width = size.width;
+    var height = size.height;
+    var x = details.localPosition.dx;
+    var y = details.localPosition.dy;
+
+    var action = '';
+
+    if (x < 90) {
+      action = 'left';
+    } else if (x > width - 90) {
+      action = 'right';
+    } else if (y < height / 2) {
+      action = 'top';
+    } else {
+      action = 'bottom';
+    }
+
+    http.post(Uri.parse('http://' + connectIp + '/pantilt'), headers: {
+      'Content-Type': 'application/json'
+    }, body: jsonEncode({'action': action}));
+  }
+
+  void _handleTouchEnd (LongPressEndDetails details, String connectIp) {
+    http.post(Uri.parse('http://' + connectIp + '/pantilt'), headers: {
+      'Content-Type': 'application/json'
+    }, body: jsonEncode({'action': 'stop'}));
+  }
+  
+  _getSize(GlobalKey key) {
+    if (key.currentContext != null) {
+      final RenderBox renderBox = key.currentContext!.findRenderObject() as RenderBox;
+      Size size = renderBox.size;
+      return size;
+    }
+  }
 
   void _getUser() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -65,9 +106,9 @@ class _MonitorPageState extends State<MonitorPage> {
   }
 
   String _cameraUrl(String connectIp) {
-    var urlPort = int.parse(connectIp.substring(connectIp.length - 4)) + 1;
-    var cameraUrl = connectIp.substring(0, connectIp.length - 4) + urlPort.toString();
-    return 'http://' + cameraUrl + '?action=stream';
+    /*var urlPort = int.parse(connectIp.substring(connectIp.length - 4)) + 1;
+    var cameraUrl = connectIp.substring(0, connectIp.length - 4) + urlPort.toString();*/
+    return 'http://' + connectIp + '?action=stream';
   }
 
   @override
@@ -96,7 +137,14 @@ class _MonitorPageState extends State<MonitorPage> {
                 children: [
                   Text(station.stationName),
                   const SizedBox(height: 10,),
-                  Mjpeg(isLive: true, stream: _cameraUrl(station.connectIp)),
+                  GestureDetector(onLongPressStart: (LongPressStartDetails details) {
+                      _handleTouchStart(details, station.connectIp);
+                    }, onLongPressEnd: (LongPressEndDetails details) {
+                      _handleTouchEnd(details, station.connectIp);
+                    }, key: _mjpegKey,
+                        child: Mjpeg(isLive: true, stream: _cameraUrl(station.connectIp), error: (context, error, stack) {
+                          return Container();
+                        },)),
                   const SizedBox(height: 20,),
                   ListView(
                     scrollDirection: Axis.vertical,

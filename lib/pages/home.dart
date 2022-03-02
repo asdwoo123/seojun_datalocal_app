@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:seojun_datalocal_app/pages/monitor.dart';
 import 'package:seojun_datalocal_app/pages/project.dart';
+import 'package:seojun_datalocal_app/pages/remote.dart';
 import 'package:seojun_datalocal_app/pages/setting.dart';
 
 List<Widget> widgetOptions = [
   MonitorPage(),
-  ProjectPage(),
-  SettingPage()
+  RemotePage(),
+  ProjectPage()
 ];
 
 class HomePage extends StatefulWidget {
@@ -36,8 +37,8 @@ class _HomePageState extends State<HomePage> {
       bottomNavigationBar: BottomNavigationBar(
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.desktop_windows), label: 'Monitor'),
+          BottomNavigationBarItem(icon: Icon(Icons.settings_remote), label: 'Remote'),
           BottomNavigationBarItem(icon: Icon(Icons.assignment), label: 'Project'),
-          BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Setting')
         ],
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.amber[800],
