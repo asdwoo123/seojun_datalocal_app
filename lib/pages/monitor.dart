@@ -8,7 +8,6 @@ import 'package:http/http.dart' as http;
 
 import '../model/Station.dart';
 
-GlobalKey _mjpegKey = GlobalKey();
 
 class MonitorPage extends StatefulWidget {
   const MonitorPage({Key? key}) : super(key: key);
@@ -20,9 +19,11 @@ class MonitorPage extends StatefulWidget {
 class _MonitorPageState extends State<MonitorPage> {
   List<Station> _projects = [];
   List<IO.Socket> _sockets = [];
+  Map<String, GlobalKey> _globalKeys = {};
 
-  void _handleTouchStart(LongPressStartDetails details, String connectIp) {
-    var size = _getSize(_mjpegKey);
+  void _handleTouchStart(LongPressStartDetails details, String connectIp, GlobalKey? key) {
+    if (key == null) return;
+    var size = _getSize(key);
     var width = size.width;
     var height = size.height;
     var x = details.localPosition.dx;
@@ -40,20 +41,21 @@ class _MonitorPageState extends State<MonitorPage> {
       action = 'bottom';
     }
 
-    http.post(Uri.parse('http://' + connectIp + '/pantilt'), headers: {
-      'Content-Type': 'application/json'
-    }, body: jsonEncode({'action': action}));
+    http.post(Uri.parse('http://' + connectIp + '/pantilt'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'action': action}));
   }
 
-  void _handleTouchEnd (LongPressEndDetails details, String connectIp) {
-    http.post(Uri.parse('http://' + connectIp + '/pantilt'), headers: {
-      'Content-Type': 'application/json'
-    }, body: jsonEncode({'action': 'stop'}));
+  void _handleTouchEnd(LongPressEndDetails details, String connectIp) {
+    http.post(Uri.parse('http://' + connectIp + '/pantilt'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'action': 'stop'}));
   }
-  
+
   _getSize(GlobalKey key) {
     if (key.currentContext != null) {
-      final RenderBox renderBox = key.currentContext!.findRenderObject() as RenderBox;
+      final RenderBox renderBox =
+          key.currentContext!.findRenderObject() as RenderBox;
       Size size = renderBox.size;
       return size;
     }
@@ -68,13 +70,31 @@ class _MonitorPageState extends State<MonitorPage> {
       userInfo['project'].forEach((project) {
         if (!project['activate']) return;
         var station = Station.fromJson(project);
-
-        IO.Socket socket = IO.io('http://' + station.connectIp, <String, dynamic>{
-          'transports': ['websocket']
-        });
+        _globalKeys[station.stationName] = GlobalKey();
+        IO.Socket socket =
+            IO.io('http://' + station.connectIp, IO.OptionBuilder().setTransports(['websocket'])
+                .build()
+            );
         _sockets.add(socket);
         Map<String, dynamic> value = {};
-        station.stationInfo.where((stationData) => stationData.activate).forEach((stationData) {
+        socket.onConnect((data) {
+          if (mounted == true) {
+            setState(() {
+              station.isConnect = true;
+            });
+          }
+        });
+        socket.onDisconnect((data) {
+          if (mounted == true) {
+
+            setState(() {
+              station.isConnect = false;
+            });
+          }
+        });
+        station.stationInfo
+            .where((stationData) => stationData.activate)
+            .forEach((stationData) {
           if (stationData.type == 'int') {
             value[stationData.name] = '0';
           }
@@ -89,11 +109,11 @@ class _MonitorPageState extends State<MonitorPage> {
           }
 
           socket.on(stationData.name, (v) {
-              if (mounted == true) {
-                setState(() {
-                  station.data[stationData.name] = v['data'].toString();
-                });
-              }
+            if (mounted == true) {
+              setState(() {
+                station.data[stationData.name] = v['data'].toString();
+              });
+            }
           });
         });
         station.data = value;
@@ -106,8 +126,6 @@ class _MonitorPageState extends State<MonitorPage> {
   }
 
   String _cameraUrl(String connectIp) {
-    /*var urlPort = int.parse(connectIp.substring(connectIp.length - 4)) + 1;
-    var cameraUrl = connectIp.substring(0, connectIp.length - 4) + urlPort.toString();*/
     return 'http://' + connectIp + '?action=stream';
   }
 
@@ -119,8 +137,6 @@ class _MonitorPageState extends State<MonitorPage> {
 
   @override
   void dispose() {
-    /*_sockets.forEach((s) { s.disconnect(); });
-    _sockets = [];*/
     super.dispose();
   }
 
@@ -136,26 +152,49 @@ class _MonitorPageState extends State<MonitorPage> {
               child: Column(
                 children: [
                   Text(station.stationName),
-                  const SizedBox(height: 10,),
-                  GestureDetector(onLongPressStart: (LongPressStartDetails details) {
-                      _handleTouchStart(details, station.connectIp);
-                    }, onLongPressEnd: (LongPressEndDetails details) {
-                      _handleTouchEnd(details, station.connectIp);
-                    }, key: _mjpegKey,
-                        child: Mjpeg(isLive: true, stream: _cameraUrl(station.connectIp), error: (context, error, stack) {
+                  const SizedBox(
+                    height: 10,
+                  ),
+                  GestureDetector(
+                      onLongPressStart: (LongPressStartDetails details) {
+                        _handleTouchStart(details, station.connectIp, _globalKeys[station.stationName]);
+                      },
+                      onLongPressEnd: (LongPressEndDetails details) {
+                        _handleTouchEnd(details, station.connectIp);
+                      },
+                      key: _globalKeys[station.stationName],
+                      child: Mjpeg(
+                        isLive: true,
+                        stream: _cameraUrl(station.connectIp),
+                        error: (context, error, stack) {
                           return Container();
-                        },)),
-                  const SizedBox(height: 20,),
+                        },
+                      )),
+                  const SizedBox(
+                    height: 20,
+                  ),
+                  Row(
+                    children: [
+                      Text('상태'),
+                      Spacer(),
+                      Text((station.isConnect) ? '연결' : '연결되지않음')
+                    ],
+                  ),
                   ListView(
                     scrollDirection: Axis.vertical,
                     shrinkWrap: true,
-                    children: station.stationInfo.where((e) => e.activate).map<Widget>((stationData) {
-                      return Row(children: [
-                        Text(stationData.name),
-                        Spacer(),
-                        Text(station.data[stationData.name])
-                      ],);
-                    }).toList(),)
+                    children: station.stationInfo
+                        .where((e) => e.activate)
+                        .map<Widget>((stationData) {
+                      return Row(
+                        children: [
+                          Text(stationData.name),
+                          Spacer(),
+                          Text(station.data[stationData.name])
+                        ],
+                      );
+                    }).toList(),
+                  )
                 ],
               ),
             ),

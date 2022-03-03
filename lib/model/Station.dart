@@ -1,10 +1,11 @@
 class Station {
   late String stationName;
   late String connectIp;
+  bool isConnect = false;
   late List<StationData> stationInfo;
   late Map<String, dynamic> data;
 
-  Station(this.stationName, this.connectIp, this.stationInfo);
+  Station(this.stationName, this.connectIp, this.isConnect, this.stationInfo);
 
   Station.fromJson(Map<String, dynamic> json) {
     stationName = json['stationName'];

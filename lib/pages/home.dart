@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:seojun_datalocal_app/pages/monitor.dart';
 import 'package:seojun_datalocal_app/pages/project.dart';
 import 'package:seojun_datalocal_app/pages/remote.dart';
-import 'package:seojun_datalocal_app/pages/setting.dart';
 
 List<Widget> widgetOptions = [
   MonitorPage(),
@@ -31,6 +30,7 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       body: SafeArea(
         child: Container(
+          /*decoration: BoxDecoration(color: Color()),*/
           child: widgetOptions.elementAt(_selectedIndex),
         ),
       ),

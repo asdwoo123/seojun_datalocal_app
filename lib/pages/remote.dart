@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 
 import '../model/Station.dart';
 
@@ -36,8 +37,13 @@ class _RemotePageState extends State<RemotePage> {
   }
 
   void _remoteStation() async {
-    var connectIp = _projects[_stationIndex];
+    var connectIp = _projects[_stationIndex].connectIp;
     var nodeId = _projects[_stationIndex].stationInfo[_dataIndex].nodeId;
+    var remoteValue = int.parse(_remoteValue);
+
+    http.post(Uri.parse('http://' + connectIp + '/remote'),
+    headers: {'Content-Type': 'application/json'},
+    body: jsonEncode({'nodeId': nodeId, 'value': remoteValue}));
   }
 
   @override
@@ -50,23 +56,33 @@ class _RemotePageState extends State<RemotePage> {
   Widget build(BuildContext context) {
     if (_projects.isNotEmpty) {
       return Padding(
-        padding: const EdgeInsets.all(8.0),
+        padding: const EdgeInsets.all(30.0),
         child: Column(
           children: [
-            DropdownButton(value: _projects[0].stationName, items: _projects.map((station) {
+            DropdownButton(value: _projects[_stationIndex].stationName, items: _projects.map((station) {
               return DropdownMenuItem(value: station.stationName, child: Text(station.stationName));
             }).toList(), onChanged: (Object? value) { 
-              print(value);
+              var index = _projects.indexOf(_projects.where((station) => station.stationName == value).toList()[0]);
+              setState(() {
+                _stationIndex = index;
+              });
             },),
             SizedBox(height: 17,),
-            DropdownButton(value: _projects[0].stationInfo[0].name, items: _projects[0].stationInfo.map((data) {
+            DropdownButton(value: _projects[_stationIndex].stationInfo[_dataIndex].name, items: _projects[_stationIndex].stationInfo.map((data) {
               return DropdownMenuItem(value: data.name, child: Text(data.name));
             }).toList(), onChanged: (Object? value) {
-              print(value);
+              var stationInfo = _projects[_stationIndex].stationInfo;
+              var index = stationInfo.indexOf(stationInfo.where((data) => data.name == value).toList()[0]);
+              setState(() {
+                _dataIndex = index;
+              });
             },),
             SizedBox(height: 17,),
-            TextFormField(),
-            ElevatedButton(onPressed: () {}, child: const Center(child: Text('remote')))
+            TextFormField(keyboardType: TextInputType.number, onChanged: (value) => setState(() {
+              _remoteValue = value;
+            }),),
+            SizedBox(height: 25,),
+            ElevatedButton(onPressed: _remoteStation, child: const Center(child: Text('remote')))
           ],
         ),
       );
