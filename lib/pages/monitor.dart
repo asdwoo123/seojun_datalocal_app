@@ -16,6 +16,7 @@ class MonitorPage extends StatefulWidget {
   _MonitorPageState createState() => _MonitorPageState();
 }
 
+
 class _MonitorPageState extends State<MonitorPage> {
   List<Station> _projects = [];
   List<IO.Socket> _sockets = [];
@@ -73,10 +74,19 @@ class _MonitorPageState extends State<MonitorPage> {
         _globalKeys[station.stationName] = GlobalKey();
         IO.Socket socket =
             IO.io('http://' + station.connectIp, IO.OptionBuilder().setTransports(['websocket'])
-                .build()
+                .enableReconnection().build()
             );
+
         _sockets.add(socket);
+
         Map<String, dynamic> value = {};
+
+        if (socket.connected) {
+          setState(() {
+            station.isConnect = true;
+          });
+        }
+
         socket.onConnect((data) {
           if (mounted == true) {
             setState(() {
@@ -86,7 +96,6 @@ class _MonitorPageState extends State<MonitorPage> {
         });
         socket.onDisconnect((data) {
           if (mounted == true) {
-
             setState(() {
               station.isConnect = false;
             });
@@ -94,7 +103,7 @@ class _MonitorPageState extends State<MonitorPage> {
         });
         station.stationInfo
             .where((stationData) => stationData.activate)
-            .forEach((stationData) {
+            .forEach((stationData) async {
           if (stationData.type == 'int') {
             value[stationData.name] = '0';
           }
@@ -107,6 +116,12 @@ class _MonitorPageState extends State<MonitorPage> {
           if (stationData.type == 'bool') {
             value[stationData.name] = 'true';
           }
+
+          var res = await http.read(Uri.parse('http://' + station.connectIp + '/nodeId/' + stationData.nodeId));
+          var parsed = json.decode(res);
+          setState(() {
+            station.data[stationData.name] = parsed['value'].toString();
+          });
 
           socket.on(stationData.name, (v) {
             if (mounted == true) {
@@ -137,6 +152,7 @@ class _MonitorPageState extends State<MonitorPage> {
 
   @override
   void dispose() {
+    /*_sockets.forEach((socket) => socket.disconnect());*/
     super.dispose();
   }
 
