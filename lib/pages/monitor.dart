@@ -5,9 +5,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:flutter_mjpeg/flutter_mjpeg.dart';
 import 'package:http/http.dart' as http;
+import 'package:adaptive_action_sheet/adaptive_action_sheet.dart';
 
 import '../model/Station.dart';
-
 
 class MonitorPage extends StatefulWidget {
   const MonitorPage({Key? key}) : super(key: key);
@@ -16,13 +16,13 @@ class MonitorPage extends StatefulWidget {
   _MonitorPageState createState() => _MonitorPageState();
 }
 
-
 class _MonitorPageState extends State<MonitorPage> {
   List<Station> _projects = [];
   List<IO.Socket> _sockets = [];
   Map<String, GlobalKey> _globalKeys = {};
 
-  void _handleTouchStart(LongPressStartDetails details, String connectIp, GlobalKey? key) {
+  void _handleTouchStart(
+      LongPressStartDetails details, String connectIp, GlobalKey? key) {
     if (key == null) return;
     var size = _getSize(key);
     var width = size.width;
@@ -41,16 +41,11 @@ class _MonitorPageState extends State<MonitorPage> {
     } else {
       action = 'bottom';
     }
-
-    http.post(Uri.parse('http://' + connectIp + '/pantilt'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'action': action}));
+    _postJsonHttp('http://' + connectIp + '/pantilt', {'action': action});
   }
 
   void _handleTouchEnd(LongPressEndDetails details, String connectIp) {
-    http.post(Uri.parse('http://' + connectIp + '/pantilt'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'action': 'stop'}));
+    _postJsonHttp('http://' + connectIp + '/pantilt', {'action': 'stop'});
   }
 
   _getSize(GlobalKey key) {
@@ -72,10 +67,12 @@ class _MonitorPageState extends State<MonitorPage> {
         if (!project['activate']) return;
         var station = Station.fromJson(project);
         _globalKeys[station.stationName] = GlobalKey();
-        IO.Socket socket =
-            IO.io('http://' + station.connectIp, IO.OptionBuilder().setTransports(['websocket'])
-                .enableReconnection().build()
-            );
+        IO.Socket socket = IO.io(
+            'http://' + station.connectIp,
+            IO.OptionBuilder()
+                .setTransports(['websocket'])
+                .enableReconnection()
+                .build());
 
         _sockets.add(socket);
 
@@ -107,17 +104,21 @@ class _MonitorPageState extends State<MonitorPage> {
           if (stationData.type == 'int') {
             value[stationData.name] = '0';
           }
+
           if (stationData.type == 'float') {
             value[stationData.name] = '0.0';
           }
+
           if (stationData.type == 'string') {
             value[stationData.name] = '';
           }
+
           if (stationData.type == 'bool') {
             value[stationData.name] = 'true';
           }
 
-          var res = await http.read(Uri.parse('http://' + station.connectIp + '/nodeId/' + stationData.nodeId));
+          var res = await http.read(Uri.parse(
+              'http://' + station.connectIp + '/nodeId/' + stationData.nodeId));
           var parsed = json.decode(res);
           setState(() {
             station.data[stationData.name] = parsed['value'].toString();
@@ -144,6 +145,42 @@ class _MonitorPageState extends State<MonitorPage> {
     return 'http://' + connectIp + '?action=stream';
   }
 
+  void _postJsonHttp(String connectUrl, Map<String, dynamic> data) {
+    http.post(Uri.parse(connectUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(data));
+  }
+
+  void _showRemoteSheet(String connectIp) {
+    showAdaptiveActionSheet(context: context,
+        title: const Text('remote'),
+        actions:
+    <BottomSheetAction>[
+      BottomSheetAction(title: Text('Start'), onPressed: () {
+        _postJsonHttp('http://' + connectIp + '/remote', {'action': 'start'});
+        Navigator.pop(context);
+      }),
+      BottomSheetAction(title: Text('Reset'), onPressed: () {
+        _postJsonHttp('http://' + connectIp + '/remote', {'action': 'reset'});
+        Navigator.pop(context);
+      }),
+      BottomSheetAction(title: Text('Stop'), onPressed: () {
+        _postJsonHttp('http://' + connectIp + '/remote', {'action': 'stop'});
+        Navigator.pop(context);
+      }),
+    ]);
+  }
+
+  void _showShareSheet() {
+    showAdaptiveActionSheet(context: context, title: const Text('share'),
+    actions: <BottomSheetAction>[
+      BottomSheetAction(title: Text('Kakao talk'), onPressed: () {
+        print('Hello KAKAO!');
+      })
+    ]);
+  }
+
+
   @override
   void initState() {
     _getUser();
@@ -163,17 +200,46 @@ class _MonitorPageState extends State<MonitorPage> {
       child: ListView(
         children: _projects.map<Widget>((station) {
           return Card(
+            elevation: 1,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(15.0),
+            ),
             child: Padding(
               padding: const EdgeInsets.all(20.0),
               child: Column(
                 children: [
-                  Text(station.stationName),
+                  Row(
+                    children: [
+                      Text(
+                        station.stationName,
+                        style: TextStyle(fontSize: 18),
+                      ),
+                      Spacer(),
+                      ElevatedButton(onPressed: () {
+                        _showShareSheet();
+                      }, child: Center(child: Text('Share'),), style: ElevatedButton.styleFrom(
+                          primary: Colors.orange[400]),
+                      ),
+                      SizedBox(width: 20,),
+                      ElevatedButton(
+                        onPressed: () {
+                          _showRemoteSheet(station.connectIp);
+                        },
+                        child: Center(
+                          child: Text('Remote'),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                            primary: Colors.orange[400]),
+                      )
+                    ],
+                  ),
                   const SizedBox(
-                    height: 10,
+                    height: 20,
                   ),
                   GestureDetector(
                       onLongPressStart: (LongPressStartDetails details) {
-                        _handleTouchStart(details, station.connectIp, _globalKeys[station.stationName]);
+                        _handleTouchStart(details, station.connectIp,
+                            _globalKeys[station.stationName]);
                       },
                       onLongPressEnd: (LongPressEndDetails details) {
                         _handleTouchEnd(details, station.connectIp);
@@ -202,12 +268,21 @@ class _MonitorPageState extends State<MonitorPage> {
                     children: station.stationInfo
                         .where((e) => e.activate)
                         .map<Widget>((stationData) {
-                      return Row(
-                        children: [
-                          Text(stationData.name),
-                          Spacer(),
-                          Text(station.data[stationData.name])
-                        ],
+                      return Padding(
+                        padding: const EdgeInsets.fromLTRB(0, 3.0, 0, 3.0),
+                        child: Row(
+                          children: [
+                            Text(
+                              stationData.name,
+                              style: TextStyle(fontSize: 14.0),
+                            ),
+                            Spacer(),
+                            Text(
+                              station.data[stationData.name],
+                              style: TextStyle(fontSize: 14.0),
+                            )
+                          ],
+                        ),
                       );
                     }).toList(),
                   )
