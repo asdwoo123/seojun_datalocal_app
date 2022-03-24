@@ -236,9 +236,9 @@ class _ProjectPageState extends State<ProjectPage> {
         children: <Widget>[
           Row(
             children: <Widget>[
-              TextButton(onPressed: _getUser, child: const Text('초기화')),
-              TextButton(onPressed: _saveProject, child: const Text('저장')),
-              TextButton(
+              ElevatedButton(onPressed: _getUser, child: const Text('초기화')),
+              ElevatedButton(onPressed: _saveProject, child: const Text('저장')),
+              ElevatedButton(
                   onPressed: () {
                     setState(() {
                       _create = true;

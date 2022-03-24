@@ -159,19 +159,27 @@ class _HistoryPageState extends State<HistoryPage> {
                 children: [
                   Expanded(
                     flex: 2,
-                    child: DropdownButton(value: _projects[_stationIndex].stationName, items: _projects.map((station) {
-                      return DropdownMenuItem(value: station.stationName, child: Text(station.stationName));
-                    }).toList(), onChanged: (Object? value) {
-                      var index = _projects.indexOf(_projects.where((station) => station.stationName == value).toList()[0]);
-                      setState(() {
-                        _stationIndex = index;
-                      });
-                    },),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                      ),
+                      child: DropdownButton(value: _projects[_stationIndex].stationName, items: _projects.map((station) {
+                        return DropdownMenuItem(value: station.stationName, child: Text(station.stationName));
+                      }).toList(), onChanged: (Object? value) {
+                        var index = _projects.indexOf(_projects.where((station) => station.stationName == value).toList()[0]);
+                        setState(() {
+                          _stationIndex = index;
+                        });
+                      },),
+                    ),
                   ),
                   Expanded(
                     flex: 3,
                     child: TextFormField(
                       decoration: const InputDecoration(
+                        contentPadding: const EdgeInsets.all(8.0),
+                        filled: true,
+                        fillColor: Colors.white,
                         border: OutlineInputBorder(
                           borderSide: BorderSide(
                             color: Colors.white24,
@@ -188,13 +196,16 @@ class _HistoryPageState extends State<HistoryPage> {
                   ),
                   Expanded(
                     flex: 2,
-                    child: ElevatedButton(onPressed: () {
-                      setState(() {
-                        _page = 0;
-                        _pageEnd = false;
-                        myFuture = _getData();
-                      });
-                    }, child: Text('Search')),
+                    child: SizedBox(
+                      height: 47,
+                      child: ElevatedButton(onPressed: () {
+                        setState(() {
+                          _page = 0;
+                          _pageEnd = false;
+                          myFuture = _getData();
+                        });
+                      }, child: Text('Search', style: TextStyle(fontSize: 18),)),
+                    ),
                   )
                 ],
               ),

@@ -42,9 +42,9 @@ class _HomePageState extends State<HomePage> {
           borderRadius: BorderRadius.only(
             topRight: Radius.circular(30), topLeft: Radius.circular(30),
           ),
-          boxShadow: [
+          /*boxShadow: [
             BoxShadow(color: Colors.black38, spreadRadius: 0, blurRadius: 10),
-          ],
+          ],*/
         ),
         child: BottomNavigationBar(
           items: const [

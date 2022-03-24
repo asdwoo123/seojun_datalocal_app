@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/painting.dart';
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
 import 'package:seojun_datalocal_app/theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -225,7 +226,7 @@ class _MonitorPageState extends State<MonitorPage> {
       child: ListView(
         children: _projects.map<Widget>((station) {
           return Card(
-            elevation: 1,
+            elevation: 0.5,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(15.0),
             ),
@@ -237,7 +238,7 @@ class _MonitorPageState extends State<MonitorPage> {
                     children: [
                       Text(
                         station.stationName,
-                        style: TextStyle(fontSize: 18),
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                       Spacer(),
                       ElevatedButton(onPressed: () {
@@ -284,7 +285,8 @@ class _MonitorPageState extends State<MonitorPage> {
                     children: [
                       Text('상태'),
                       Spacer(),
-                      Text((station.isConnect) ? '연결' : '연결되지않음')
+                      Text((station.isConnect) ? '연결' : '연결되지않음',
+                        style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.w500),)
                     ],
                   ),
                   ListView(
@@ -299,12 +301,12 @@ class _MonitorPageState extends State<MonitorPage> {
                           children: [
                             Text(
                               stationData.name,
-                              style: TextStyle(fontSize: 14.0),
+                              style: TextStyle(fontSize: 15.0),
                             ),
                             Spacer(),
                             Text(
                               station.data[stationData.name],
-                              style: TextStyle(fontSize: 14.0),
+                              style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.w500),
                             )
                           ],
                         ),
