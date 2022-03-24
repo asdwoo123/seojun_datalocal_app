@@ -157,55 +157,47 @@ class _HistoryPageState extends State<HistoryPage> {
             children: [
               Row(
                 children: [
-                  DropdownButton(value: _projects[_stationIndex].stationName, items: _projects.map((station) {
-                    return DropdownMenuItem(value: station.stationName, child: Text(station.stationName));
-                  }).toList(), onChanged: (Object? value) {
-                    var index = _projects.indexOf(_projects.where((station) => station.stationName == value).toList()[0]);
-                    setState(() {
-                      _stationIndex = index;
-                    });
-                  },),
-                  /*Expanded(
-                    child: ElevatedButton(
-                      child: Text('${start.year}/${start.month}/${start.day}'),
-                      onPressed: pickDateRange,
-                    )
-                  ),
-                  *//*SizedBox(width: 12,),*//*
                   Expanded(
-                    child: ElevatedButton(
-                      child: Text(
-                        '${end.year}/${end.month}/${end.day}',
+                    flex: 2,
+                    child: DropdownButton(value: _projects[_stationIndex].stationName, items: _projects.map((station) {
+                      return DropdownMenuItem(value: station.stationName, child: Text(station.stationName));
+                    }).toList(), onChanged: (Object? value) {
+                      var index = _projects.indexOf(_projects.where((station) => station.stationName == value).toList()[0]);
+                      setState(() {
+                        _stationIndex = index;
+                      });
+                    },),
+                  ),
+                  Expanded(
+                    flex: 3,
+                    child: TextFormField(
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(
+                          borderSide: BorderSide(
+                            color: Colors.white24,
+                            width: 3.0,
+                          )
+                        ),
+                        hintText: 'Enter the search barcode',
                       ),
-                      onPressed: pickDateRange,
+                      initialValue: _barcode,
+                      onChanged: (value) {
+                        _barcode = value;
+                      },
                     ),
-                  ),*/
+                  ),
+                  Expanded(
+                    flex: 2,
+                    child: ElevatedButton(onPressed: () {
+                      setState(() {
+                        _page = 0;
+                        _pageEnd = false;
+                        myFuture = _getData();
+                      });
+                    }, child: Text('Search')),
+                  )
                 ],
               ),
-              Row(children: [
-                Expanded(
-                  flex: 2,
-                  child: TextFormField(
-                    decoration: const InputDecoration(
-                      hintText: 'Enter the search barcode',
-                    ),
-                    initialValue: _barcode,
-                    onChanged: (value) {
-                      _barcode = value;
-                    },
-                  ),
-                ),
-                Expanded(
-                  flex: 1,
-                  child: ElevatedButton(onPressed: () {
-                    setState(() {
-                      _page = 0;
-                      _pageEnd = false;
-                      myFuture = _getData();
-                    });
-                  }, child: Text('Search')),
-                )
-              ],)
             ],
           ),
         ),

@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
+import 'package:seojun_datalocal_app/theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:flutter_mjpeg/flutter_mjpeg.dart';
@@ -110,7 +112,7 @@ class _MonitorPageState extends State<MonitorPage> {
           }
 
           if (stationData.type == 'string') {
-            value[stationData.name] = '';
+            value[stationData.name] = 'Nan';
           }
 
           if (stationData.type == 'bool') {
@@ -171,13 +173,36 @@ class _MonitorPageState extends State<MonitorPage> {
     ]);
   }
 
-  void _showShareSheet() {
+  void _showShareSheet(Station station) {
     showAdaptiveActionSheet(context: context, title: const Text('share'),
     actions: <BottomSheetAction>[
       BottomSheetAction(title: Text('Kakao talk'), onPressed: () {
-        print('Hello KAKAO!');
+        _shareKaKao(station);
       })
     ]);
+  }
+
+  void _shareKaKao(Station station) async {
+    final FeedTemplate defaultFeed = FeedTemplate(content: Content(
+      title: station.stationName,
+      imageUrl: Uri.parse(
+          'http://' + station.connectIp + '/?action=capture'
+      ),
+      link: Link(
+        webUrl: Uri.parse(''),
+        mobileWebUrl: Uri.parse('')
+      )
+    ),
+      itemContent: ItemContent(
+        items: station.stationInfo
+            .where((e) => e.activate)
+            .map<ItemInfo>((stationData) {
+              return ItemInfo(item: stationData.name, itemOp: station.data[stationData.name]);
+        }).toList()
+    ));
+
+    Uri shareUrl = await WebSharerClient.instance.defaultTemplateUri(template: defaultFeed);
+    await launchBrowserTab(shareUrl);
   }
 
 
@@ -196,7 +221,7 @@ class _MonitorPageState extends State<MonitorPage> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(15.0),
+      padding: const EdgeInsets.all(16.0),
       child: ListView(
         children: _projects.map<Widget>((station) {
           return Card(
@@ -216,11 +241,11 @@ class _MonitorPageState extends State<MonitorPage> {
                       ),
                       Spacer(),
                       ElevatedButton(onPressed: () {
-                        _showShareSheet();
+                        _showShareSheet(station);
                       }, child: Center(child: Text('Share'),), style: ElevatedButton.styleFrom(
-                          primary: Colors.orange[400]),
+                          primary: textGrey),
                       ),
-                      SizedBox(width: 20,),
+                      SizedBox(width: 10,),
                       ElevatedButton(
                         onPressed: () {
                           _showRemoteSheet(station.connectIp);
@@ -229,7 +254,7 @@ class _MonitorPageState extends State<MonitorPage> {
                           child: Text('Remote'),
                         ),
                         style: ElevatedButton.styleFrom(
-                            primary: Colors.orange[400]),
+                            primary: primaryBlue),
                       )
                     ],
                   ),

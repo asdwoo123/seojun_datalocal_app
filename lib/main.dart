@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
 import 'package:seojun_datalocal_app/pages/home.dart';
 
 void main() {
+  KakaoSdk.init(nativeAppKey: 'dabb5cf4b1f352d4186215896255d9fc');
   runApp(const MyApp());
 }
 
@@ -24,7 +26,7 @@ class MyApp extends StatelessWidget {
         // or simply save your changes to "hot reload" in a Flutter IDE).
         // Notice that the counter didn't reset back to zero; the application
         //
-        primaryColor: Colors.orange[400],
+        /*primaryColor: Colors.orange[400],*/
         fontFamily: 'NotoSansCJKkr',
         primarySwatch: Colors.blue,
       ),

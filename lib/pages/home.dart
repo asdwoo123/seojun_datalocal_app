@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:seojun_datalocal_app/pages/History.dart';
+import 'package:seojun_datalocal_app/pages/kakao.dart';
 import 'package:seojun_datalocal_app/pages/monitor.dart';
 import 'package:seojun_datalocal_app/pages/project.dart';
-import 'package:seojun_datalocal_app/pages/remote.dart';
 
 List<Widget> widgetOptions = [
   MonitorPage(),
@@ -46,21 +46,15 @@ class _HomePageState extends State<HomePage> {
             BoxShadow(color: Colors.black38, spreadRadius: 0, blurRadius: 10),
           ],
         ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(30.0),
-            topRight: Radius.circular(30.0)
-          ),
-          child: BottomNavigationBar(
-            items: const [
-              BottomNavigationBarItem(icon: Icon(Icons.desktop_windows), label: ''),
-              BottomNavigationBarItem(icon: Icon(Icons.history), label: ''),
-              BottomNavigationBarItem(icon: Icon(Icons.assignment), label: ''),
-            ],
-            currentIndex: _selectedIndex,
-            selectedItemColor: Colors.amber[800],
-            onTap: _onItemTapped,
-          ),
+        child: BottomNavigationBar(
+          items: const [
+            BottomNavigationBarItem(icon: Icon(Icons.desktop_windows), label: '모니터링'),
+            BottomNavigationBarItem(icon: Icon(Icons.history), label: '기록'),
+            BottomNavigationBarItem(icon: Icon(Icons.assignment), label: '프로젝트관리'),
+          ],
+          currentIndex: _selectedIndex,
+          /*selectedItemColor: Colors.amber[800],*/
+          onTap: _onItemTapped,
         ),
       ),
     );
