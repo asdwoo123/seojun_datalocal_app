@@ -1,5 +1,12 @@
+import 'dart:convert';
+import 'dart:io';
+import 'dart:math';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
 
 class KaKaoPage extends StatefulWidget {
   const KaKaoPage({Key? key}) : super(key: key);
@@ -68,10 +75,16 @@ class _KaKaoPageState extends State<KaKaoPage> {
 
   void _openKaKao() async {
     try {
-      Uri shareUrl = await WebSharerClient.instance.defaultTemplateUri(template: defaultFeed);
-      await launchBrowserTab(shareUrl);
+      var rng = new Random();
+      Directory tempDir = await getTemporaryDirectory();
+      String tempPath = tempDir.path;
+      File file = new File('$tempPath' + (rng.nextInt(100).toString() + '.jpg'));
+      http.Response response = await http.get(Uri.parse('http://192.168.0.91:3000/?action=capture'));
+      await file.writeAsBytes(response.bodyBytes);
+      ImageUploadResult imageUploadResult = await LinkClient.instance.uploadImage(image: file);
+      print('이미지 업로드 성공 \n${imageUploadResult.infos.original}');
     } catch (e) {
-      print('카카오링크 공유하기 실패 $e');
+      print('이미지 업로드 실패 $e');
     }
   }
 

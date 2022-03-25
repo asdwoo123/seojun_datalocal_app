@@ -1,8 +1,11 @@
 import 'dart:convert';
+import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/painting.dart';
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:seojun_datalocal_app/theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
@@ -184,26 +187,37 @@ class _MonitorPageState extends State<MonitorPage> {
   }
 
   void _shareKaKao(Station station) async {
-    final FeedTemplate defaultFeed = FeedTemplate(content: Content(
-      title: station.stationName,
-      imageUrl: Uri.parse(
-          'http://' + station.connectIp + '/?action=capture'
+    try {
+      var rng = new Random();
+      Directory tempDir = await getTemporaryDirectory();
+      String tempPath = tempDir.path;
+      File file = new File('$tempPath' + (rng.nextInt(100).toString() + '.jpg'));
+      http.Response response = await http.get(Uri.parse('http://' + station.connectIp + '/?action=capture'));
+      await file.writeAsBytes(response.bodyBytes);
+      ImageUploadResult imageUploadResult = await LinkClient.instance.uploadImage(image: file);
+      final FeedTemplate defaultFeed = FeedTemplate(content: Content(
+          title: station.stationName,
+          imageUrl: Uri.parse(
+              imageUploadResult.infos.original.url
+          ),
+          link: Link(
+              webUrl: Uri.parse(''),
+              mobileWebUrl: Uri.parse('')
+          )
       ),
-      link: Link(
-        webUrl: Uri.parse(''),
-        mobileWebUrl: Uri.parse('')
-      )
-    ),
-      itemContent: ItemContent(
-        items: station.stationInfo
-            .where((e) => e.activate)
-            .map<ItemInfo>((stationData) {
-              return ItemInfo(item: stationData.name, itemOp: station.data[stationData.name]);
-        }).toList()
-    ));
-
-    Uri shareUrl = await WebSharerClient.instance.defaultTemplateUri(template: defaultFeed);
-    await launchBrowserTab(shareUrl);
+          itemContent: ItemContent(
+              items: station.stationInfo
+                  .where((e) => e.activate)
+                  .map<ItemInfo>((stationData) {
+                return ItemInfo(item: stationData.name, itemOp: station.data[stationData.name]);
+              }).toList()
+          ));
+      Uri shareUrl = await WebSharerClient.instance.defaultTemplateUri(template: defaultFeed);
+      await launchBrowserTab(shareUrl);
+      print('이미지 업로드 성공');
+    } catch (e) {
+      print('이미지 업로드 실패 $e');
+    }
   }
 
 
