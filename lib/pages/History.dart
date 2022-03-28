@@ -180,12 +180,12 @@ class _HistoryPageState extends State<HistoryPage> {
                         contentPadding: const EdgeInsets.all(8.0),
                         filled: true,
                         fillColor: Colors.white,
-                        border: OutlineInputBorder(
-                          borderSide: BorderSide(
+                        /*border: OutlineInputBorder(
+                          *//*borderSide: BorderSide(
                             color: Colors.white24,
                             width: 3.0,
-                          )
-                        ),
+                          )*//*
+                        ),*/
                         hintText: 'Enter the search barcode',
                       ),
                       initialValue: _barcode,

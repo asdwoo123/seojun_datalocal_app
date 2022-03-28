@@ -3,6 +3,7 @@ import 'package:seojun_datalocal_app/pages/History.dart';
 import 'package:seojun_datalocal_app/pages/kakao.dart';
 import 'package:seojun_datalocal_app/pages/monitor.dart';
 import 'package:seojun_datalocal_app/pages/project.dart';
+import 'package:seojun_datalocal_app/theme.dart';
 
 List<Widget> widgetOptions = [
   MonitorPage(),
@@ -32,25 +33,21 @@ class _HomePageState extends State<HomePage> {
       resizeToAvoidBottomInset: false,
       body: SafeArea(
         child: Container(
-          decoration: BoxDecoration(color: Colors.grey[200]),
+          decoration: BoxDecoration(color: Color(0xfff2f2f2)),
           child: widgetOptions.elementAt(_selectedIndex),
         ),
       ),
       bottomNavigationBar:
       Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.only(
-            topRight: Radius.circular(30), topLeft: Radius.circular(30),
-          ),
-          /*boxShadow: [
-            BoxShadow(color: Colors.black38, spreadRadius: 0, blurRadius: 10),
-          ],*/
-        ),
         child: BottomNavigationBar(
+          showSelectedLabels: false,
+          showUnselectedLabels: false,
+          selectedItemColor: primaryBlue,
+          elevation: 0.0,
           items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.desktop_windows), label: '모니터링'),
-            BottomNavigationBarItem(icon: Icon(Icons.history), label: '기록'),
-            BottomNavigationBarItem(icon: Icon(Icons.assignment), label: '프로젝트관리'),
+            BottomNavigationBarItem(icon: Icon(Icons.desktop_windows_sharp, size: 30,), label: '모니터링'),
+            BottomNavigationBarItem(icon: Icon(Icons.history, size: 30), label: '기록'),
+            BottomNavigationBarItem(icon: Icon(Icons.assignment, size: 30), label: '프로젝트관리'),
           ],
           currentIndex: _selectedIndex,
           /*selectedItemColor: Colors.amber[800],*/

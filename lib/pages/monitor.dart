@@ -212,9 +212,14 @@ class _MonitorPageState extends State<MonitorPage> {
                 return ItemInfo(item: stationData.name, itemOp: station.data[stationData.name]);
               }).toList()
           ));
-      Uri shareUrl = await WebSharerClient.instance.defaultTemplateUri(template: defaultFeed);
-      await launchBrowserTab(shareUrl);
-      print('이미지 업로드 성공');
+      var isKaKao = await LinkClient.instance.isKakaoLinkAvailable();
+      if (isKaKao) {
+        Uri shareUrl = await LinkClient.instance.defaultTemplate(template: defaultFeed);
+        await LinkClient.instance.launchKakaoTalk(shareUrl);
+      } else {
+        Uri shareUrl = await WebSharerClient.instance.defaultTemplateUri(template: defaultFeed);
+        await launchBrowserTab(shareUrl);
+      }
     } catch (e) {
       print('이미지 업로드 실패 $e');
     }
@@ -240,7 +245,7 @@ class _MonitorPageState extends State<MonitorPage> {
       child: ListView(
         children: _projects.map<Widget>((station) {
           return Card(
-            elevation: 0.5,
+            elevation: 0.0,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(15.0),
             ),
@@ -257,19 +262,28 @@ class _MonitorPageState extends State<MonitorPage> {
                       Spacer(),
                       ElevatedButton(onPressed: () {
                         _showShareSheet(station);
-                      }, child: Center(child: Text('Share'),), style: ElevatedButton.styleFrom(
-                          primary: textGrey),
+                      }, child: Text('Share'), style: ElevatedButton.styleFrom(
+                          primary: primaryBlue,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
                       ),
                       SizedBox(width: 10,),
-                      ElevatedButton(
+                      OutlinedButton(
                         onPressed: () {
                           _showRemoteSheet(station.connectIp);
                         },
-                        child: Center(
-                          child: Text('Remote'),
+                        child: Text('Remote'),
+                        style: OutlinedButton.styleFrom(
+                            primary: primaryBlue,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          side: BorderSide(
+                            color: primaryBlue
+                          )
                         ),
-                        style: ElevatedButton.styleFrom(
-                            primary: primaryBlue),
                       )
                     ],
                   ),
@@ -315,12 +329,12 @@ class _MonitorPageState extends State<MonitorPage> {
                           children: [
                             Text(
                               stationData.name,
-                              style: TextStyle(fontSize: 15.0),
+                              style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.w500),
                             ),
                             Spacer(),
                             Text(
                               station.data[stationData.name],
-                              style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.w500),
+                              style: TextStyle(fontSize: 15.0),
                             )
                           ],
                         ),
