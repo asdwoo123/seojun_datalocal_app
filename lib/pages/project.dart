@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
@@ -22,6 +23,8 @@ class _ProjectPageState extends State<ProjectPage> {
   String title = '새 프로젝트';
   int _currentIndex = 0;
   Map<String, dynamic> _userMap = {'project': []};
+  final TextEditingController _stationNameController = TextEditingController();
+  final TextEditingController _connectIpController = TextEditingController();
 
   void _getUser() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -40,7 +43,10 @@ class _ProjectPageState extends State<ProjectPage> {
       _stationData = project['stationData'];
     });
 
-      _currentIndex = _userMap['project'].indexOf(project);
+    _stationNameController.text = _stationName;
+    _connectIpController.text = _connectIp;
+
+    _currentIndex = _userMap['project'].indexOf(project);
   }
 
   void _deleteStation(dynamic station) async {
@@ -84,7 +90,6 @@ class _ProjectPageState extends State<ProjectPage> {
       });
     }
 
-
     Navigator.of(context).pop();
   }
 
@@ -105,12 +110,162 @@ class _ProjectPageState extends State<ProjectPage> {
   void _connectStation(StateSetter _setState) async {
     var res = await http.read(Uri.parse('http://' + _connectIp + '/setting'));
     var parsed = json.decode(res);
+
     _setState(() {
       _stationData = parsed['data'];
     });
   }
 
-  void _showDialog() {
+  void _showFullDialog() {
+    setState(() {
+      _stationName = '';
+      _connectIp = '';
+      _stationData = [];
+    });
+
+    Navigator.of(context)
+        .push(MaterialPageRoute<String>(builder: (BuildContext context) {
+      return StatefulBuilder(
+        builder: (BuildContext context, StateSetter setState) {
+          return Scaffold(
+            appBar: AppBar(
+                title: Text(''),
+                elevation: 0.0,
+                backgroundColor: Colors.white,
+                leading: GestureDetector(
+                  child: const Icon(
+                    Icons.close,
+                    color: Colors.black,
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                  },
+                ),
+                actions: [
+                  TextButton(onPressed: _saveStation, child: const Text('저장하기', style: TextStyle(color: Colors.black),))
+                ]),
+            body: Container(
+              padding: EdgeInsets.all(20.0),
+              color: const Color(0xfff2f2f2),
+              width: MediaQuery.of(context).size.width,
+              height: MediaQuery.of(context).size.height,
+              child: SingleChildScrollView(
+                child: ListBody(
+                  children: [
+                    const Text('이름', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),),
+                    SizedBox(height: 10,),
+                    TextFormField(
+                      decoration: InputDecoration(
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(24.0),
+                              borderSide: BorderSide(
+                                  width: 0,
+                                  style: BorderStyle.none
+                              )
+                          ),
+                          hintText: 'Enter the station name',
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding: const EdgeInsets.all(12.0),
+                          suffixIcon: _stationNameController.text.isEmpty ? null : IconButton(
+                              onPressed: () {
+                                _stationNameController.clear();
+                                setState(() {
+                                  _stationName = '';
+                                });
+                              }, icon: Icon(Icons.clear)
+                          )
+                      ),
+                      controller: _stationNameController,
+                      onChanged: (value) {
+                        setState(() {
+                          _stationName = value;
+                        });
+                      },
+                    ),
+                    SizedBox(height: 20,),
+                    const Text('아이피', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),),
+                    SizedBox(height: 10,),
+                    TextFormField(
+                      decoration: InputDecoration(
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(24.0),
+                              borderSide: BorderSide(
+                                  width: 0,
+                                  style: BorderStyle.none
+                              )
+                          ),
+                          hintText: 'Connect ip',
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding: const EdgeInsets.all(12.0),
+                          suffixIcon: _connectIpController.text.isEmpty ? null : IconButton(
+                              onPressed: () {
+                                _connectIpController.clear();
+                                setState(() {
+                                  _connectIp = '';
+                                });
+                              }, icon: Icon(Icons.clear)
+                          )
+                      ),
+                      controller: _connectIpController,
+                      onChanged: (value) {
+                        setState(() {
+                          _connectIp = value;
+                        });
+                      },
+                    ),
+                    SizedBox(height: 30,),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                          onPressed: () {
+                            _connectStation(setState);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            primary: primaryBlue,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)
+                            ),
+                          ),
+                          child: Text('연결', style: TextStyle(fontSize: 16),)),
+                    ),
+                    const SizedBox(
+                      height: 16,
+                    ),
+                    ListView(
+                      scrollDirection: Axis.vertical,
+                      shrinkWrap: true,
+                      children: _stationData.map((v) {
+                        var name = v['name'] as String;
+                        var value = v['value'] as bool;
+                        return Row(
+                          children: [
+                            Text(name, style: TextStyle(fontSize: 16)),
+                            Spacer(),
+                            Checkbox(
+                                value: value,
+                                onChanged: (bool? state) {
+                                  setState(() {
+                                    v['value'] = state!;
+                                  });
+                                }),
+                          ],
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+      );
+    }));
+  }
+
+  /*void _showDialog() {
     setState(() {
       _stationName = '';
       _connectIp = '';
@@ -124,24 +279,36 @@ class _ProjectPageState extends State<ProjectPage> {
           return StatefulBuilder(
             builder: (BuildContext context, StateSetter setState) {
               return AlertDialog(
-                title: Text(title),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10.0)),
                 content: SingleChildScrollView(
                   child: ListBody(
                     children: <Widget>[
                       const Text('이름'),
-                      Container(
-                        decoration: BoxDecoration(),
-                        child: TextFormField(
-                          decoration: const InputDecoration(
-                            hintText: 'Enter the station name',
+                      TextFormField(
+                        decoration: InputDecoration(
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(24.0),
+                            borderSide: BorderSide(
+                              width: 0,
+                              style: BorderStyle.none
+                            )
                           ),
-                          initialValue: _stationName,
-                          onChanged: (value) {
-                            _stationName = value;
-                          },
+                            hintText: 'Enter the station name',
+                            filled: true,
+                            fillColor: Colors.white,
+                          contentPadding: const EdgeInsets.all(12.0),
+                          suffixIcon: IconButton(
+                              onPressed: () {}, icon: Icon(Icons.clear)
+                          )
                         ),
+                        initialValue: _stationName,
+                        controller: _stationNameController,
+                        onChanged: (value) {
+                          setState(() {
+                            _stationName = value;
+                          });
+                        },
                       ),
                       const SizedBox(
                         height: 20,
@@ -172,9 +339,7 @@ class _ProjectPageState extends State<ProjectPage> {
                                   onPressed: () {
                                     _connectStation(setState);
                                   },
-                                  child: Center(
-                                    child: Text('연결'),
-                                  )))
+                                  child: Icon(Icons.cast_connected)))
                         ],
                       ),
                       const SizedBox(
@@ -211,12 +376,19 @@ class _ProjectPageState extends State<ProjectPage> {
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
                           TextButton(
-                              onPressed: _saveStation, child: Text('저장')),
-                          TextButton(
                               onPressed: () {
                                 Navigator.of(context).pop();
                               },
-                              child: Text('취소')),
+                              child: Text(
+                                '취소',
+                                style: TextStyle(fontSize: 15),
+                              )),
+                          TextButton(
+                              onPressed: _saveStation,
+                              child: Text(
+                                '저장',
+                                style: TextStyle(fontSize: 15),
+                              )),
                         ],
                       )
                     ],
@@ -226,6 +398,13 @@ class _ProjectPageState extends State<ProjectPage> {
             },
           );
         });
+  }*/
+
+  @override
+  void dispose() {
+    _stationNameController.dispose();
+    _connectIpController.dispose();
+    super.dispose();
   }
 
   @override
@@ -236,16 +415,33 @@ class _ProjectPageState extends State<ProjectPage> {
         children: <Widget>[
           Row(
             children: <Widget>[
-              ElevatedButton(onPressed: _getUser, child: const Text('초기화')),
-              ElevatedButton(onPressed: _saveProject, child: const Text('저장')),
+              ElevatedButton(
+                onPressed: _getUser,
+                child: const Text('초기화'),
+                style: ElevatedButton.styleFrom(
+                    fixedSize: Size(90, 40), primary: primaryBlue),
+              ),
+              SizedBox(
+                width: 10,
+              ),
+              ElevatedButton(
+                  onPressed: _saveProject,
+                  child: const Text('저장'),
+                  style: ElevatedButton.styleFrom(
+                      fixedSize: Size(90, 40), primary: primaryBlue)),
+              SizedBox(
+                width: 10,
+              ),
               ElevatedButton(
                   onPressed: () {
                     setState(() {
                       _create = true;
                     });
-                    _showDialog();
+                    _showFullDialog();
                   },
-                  child: const Text('설비 등록')),
+                  child: const Text('설비 등록'),
+                  style: ElevatedButton.styleFrom(
+                      fixedSize: Size(90, 40), primary: primaryBlue)),
             ],
           ),
           SizedBox(
@@ -256,28 +452,45 @@ class _ProjectPageState extends State<ProjectPage> {
             shrinkWrap: true,
             children: _userMap['project'].map<Widget>((pj) {
               String stationName = pj['stationName'];
-              return Row(
-                children: [
-                  Checkbox(value: pj['activate'], onChanged: (value) {
-                    setState(() {
-                      pj['activate'] = value;
-                    });
-                  }),
-                  SizedBox(
-                    width: 20,
-                  ),
-                  Text(stationName),
-                  Spacer(),
-                  ElevatedButton(onPressed: () {
-                    setState(() {
-                      _create = false;
-                    });
-                    _showDialog();
-                    _findStation(pj);
-                  }, child: Center(child: Text('edit'),)),
-                  SizedBox(width: 10,),
-                  ElevatedButton(onPressed: () { _deleteStation(pj); }, child: Center(child: Text('del'),))
-                ],
+              return Container(
+                margin: EdgeInsets.only(bottom: 10),
+                decoration: BoxDecoration(color: Colors.white),
+                child: Row(
+                  children: [
+                    Checkbox(
+                        value: pj['activate'],
+                        onChanged: (value) {
+                          setState(() {
+                            pj['activate'] = value;
+                          });
+                        }),
+                    SizedBox(
+                      width: 20,
+                    ),
+                    Text(stationName),
+                    Spacer(),
+                    IconButton(
+                        onPressed: () {
+                          setState(() {
+                            _create = false;
+                          });
+                          _showFullDialog();
+                          _findStation(pj);
+                        },
+                        icon: Icon(Icons.edit)),
+                    SizedBox(
+                      width: 10,
+                    ),
+                    IconButton(
+                        onPressed: () {
+                          _deleteStation(pj);
+                        },
+                        icon: Icon(
+                          Icons.delete,
+                          color: Colors.red[500],
+                        ))
+                  ],
+                ),
               );
             }).toList(),
           ),

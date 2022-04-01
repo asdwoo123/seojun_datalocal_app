@@ -33,7 +33,7 @@ class _HomePageState extends State<HomePage> {
       resizeToAvoidBottomInset: false,
       body: SafeArea(
         child: Container(
-          decoration: BoxDecoration(color: Color(0xfff2f2f2)),
+          decoration: BoxDecoration(color: backgroundGrey),
           child: widgetOptions.elementAt(_selectedIndex),
         ),
       ),

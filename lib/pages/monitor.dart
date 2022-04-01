@@ -245,6 +245,7 @@ class _MonitorPageState extends State<MonitorPage> {
       child: ListView(
         children: _projects.map<Widget>((station) {
           return Card(
+            margin: EdgeInsets.only(bottom: 20),
             elevation: 0.0,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(15.0),
@@ -260,31 +261,33 @@ class _MonitorPageState extends State<MonitorPage> {
                         style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                       Spacer(),
+                      OutlinedButton(
+                        onPressed: () {
+                          _showShareSheet(station);
+                        },
+                        child: Text('Share'),
+                        style: OutlinedButton.styleFrom(
+                            primary: primaryBlue,
+                            fixedSize: Size(90, 40),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            side: BorderSide(
+                                color: primaryBlue
+                            )
+                        ),
+                      ),
+                      SizedBox(width: 10,),
                       ElevatedButton(onPressed: () {
-                        _showShareSheet(station);
-                      }, child: Text('Share'), style: ElevatedButton.styleFrom(
-                          primary: primaryBlue,
+                        _showRemoteSheet(station.connectIp);
+                      }, child: Text('Remote'), style: ElevatedButton.styleFrom(
+                        primary: primaryBlue,
+                        fixedSize: Size(90, 40),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
                       ),
-                      SizedBox(width: 10,),
-                      OutlinedButton(
-                        onPressed: () {
-                          _showRemoteSheet(station.connectIp);
-                        },
-                        child: Text('Remote'),
-                        style: OutlinedButton.styleFrom(
-                            primary: primaryBlue,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          side: BorderSide(
-                            color: primaryBlue
-                          )
-                        ),
-                      )
                     ],
                   ),
                   const SizedBox(
@@ -329,12 +332,12 @@ class _MonitorPageState extends State<MonitorPage> {
                           children: [
                             Text(
                               stationData.name,
-                              style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.w500),
+                              style: TextStyle(fontSize: 15.0),
                             ),
                             Spacer(),
                             Text(
                               station.data[stationData.name],
-                              style: TextStyle(fontSize: 15.0),
+                              style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.w500),
                             )
                           ],
                         ),

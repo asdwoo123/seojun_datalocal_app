@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
+import 'package:seojun_datalocal_app/theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../model/Station.dart';
@@ -25,6 +26,7 @@ class _HistoryPageState extends State<HistoryPage> {
   List<DataRow> _rows = [];
   List<DataColumn> _columns = [];
   final ScrollController _scrollController = ScrollController();
+  final TextEditingController _barcodeController = TextEditingController();
   DateTimeRange _dateTimeRange = DateTimeRange(start: DateTime.now().subtract(Duration(days: 2)), end: DateTime.now());
 
 
@@ -139,6 +141,7 @@ class _HistoryPageState extends State<HistoryPage> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _barcodeController.dispose();
     super.dispose();
   }
 
@@ -152,7 +155,7 @@ class _HistoryPageState extends State<HistoryPage> {
       controller: _scrollController,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(20.0, 12.0, 0, 12.0),
+          padding: const EdgeInsets.fromLTRB(15.0, 12.0, 0, 12.0),
           child: Column(
             children: [
               Row(
@@ -162,51 +165,74 @@ class _HistoryPageState extends State<HistoryPage> {
                     child: Container(
                       decoration: BoxDecoration(
                         color: Colors.white,
+                        borderRadius: BorderRadius.circular(10)
                       ),
-                      child: DropdownButton(value: _projects[_stationIndex].stationName, items: _projects.map((station) {
-                        return DropdownMenuItem(value: station.stationName, child: Text(station.stationName));
-                      }).toList(), onChanged: (Object? value) {
-                        var index = _projects.indexOf(_projects.where((station) => station.stationName == value).toList()[0]);
-                        setState(() {
-                          _stationIndex = index;
-                        });
-                      },),
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 12, right: 12),
+                        child: DropdownButton(value: _projects[_stationIndex].stationName, items: _projects.map((station) {
+                          return DropdownMenuItem(value: station.stationName, child: Text(station.stationName));
+                        }).toList(), onChanged: (Object? value) {
+                          var index = _projects.indexOf(_projects.where((station) => station.stationName == value).toList()[0]);
+                          setState(() {
+                            _stationIndex = index;
+                          });
+                        }, underline: SizedBox(),),
+                      ),
                     ),
                   ),
+                  SizedBox(width: 10,),
                   Expanded(
-                    flex: 3,
+                    flex: 4,
                     child: TextFormField(
-                      decoration: const InputDecoration(
-                        contentPadding: const EdgeInsets.all(8.0),
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(24.0),
+                           borderSide: BorderSide(
+                            width: 0,
+                            style: BorderStyle.none
+                          )
+                        ),
+                        contentPadding: const EdgeInsets.all(12.0),
                         filled: true,
                         fillColor: Colors.white,
-                        /*border: OutlineInputBorder(
-                          *//*borderSide: BorderSide(
-                            color: Colors.white24,
-                            width: 3.0,
-                          )*//*
-                        ),*/
-                        hintText: 'Enter the search barcode',
+                        hintText: 'Search barcode',
+                        suffixIcon: _barcodeController.text.isEmpty ? null : IconButton(
+                          onPressed: () {
+                            _barcodeController.clear();
+                            setState(() {
+                              _barcode = '';
+                            });
+                          },
+                          icon: Icon(Icons.clear)
+                        )
                       ),
-                      initialValue: _barcode,
+                      controller: _barcodeController,
                       onChanged: (value) {
-                        _barcode = value;
+                        setState(() {
+                          _barcode = value;
+                        });
                       },
                     ),
                   ),
-                  Expanded(
-                    flex: 2,
-                    child: SizedBox(
-                      height: 47,
-                      child: ElevatedButton(onPressed: () {
-                        setState(() {
-                          _page = 0;
-                          _pageEnd = false;
-                          myFuture = _getData();
-                        });
-                      }, child: Text('Search', style: TextStyle(fontSize: 18),)),
-                    ),
-                  )
+                  SizedBox(width: 10,),
+                  SizedBox(
+                    height: 48,
+                    width: 48,
+                    child: ElevatedButton(onPressed: () {
+                      setState(() {
+                        _page = 0;
+                        _pageEnd = false;
+                        myFuture = _getData();
+                      });
+                    }, child: Icon(Icons.search_sharp, size: 20,),
+                      style: ElevatedButton.styleFrom(
+                        primary: primaryBlue,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                      ),),
+                  ),
+                  SizedBox(width: 15,)
                 ],
               ),
             ],
@@ -218,15 +244,22 @@ class _HistoryPageState extends State<HistoryPage> {
               if (snapshot.hasData == false) {
                 return Container();
               } else {
-                return SingleChildScrollView(
-                  physics: BouncingScrollPhysics(),
-                  scrollDirection: Axis.horizontal,
+                return Container(
+                  margin: EdgeInsets.fromLTRB(15, 10, 0, 15),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10)
+                  ),
                   child: SingleChildScrollView(
-                      physics: BouncingScrollPhysics(),
-                      scrollDirection: Axis.vertical,
-                      child: DataTable(
-                          columns: snapshot.data['columns'],
-                          rows: snapshot.data['rows'])),
+                    physics: BouncingScrollPhysics(),
+                    scrollDirection: Axis.horizontal,
+                    child: SingleChildScrollView(
+                        physics: BouncingScrollPhysics(),
+                        scrollDirection: Axis.vertical,
+                        child: DataTable(
+                            columns: snapshot.data['columns'],
+                            rows: snapshot.data['rows'])),
+                  ),
                 );
               }
             }),
