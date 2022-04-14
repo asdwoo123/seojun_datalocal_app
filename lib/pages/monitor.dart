@@ -12,6 +12,7 @@ import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:flutter_mjpeg/flutter_mjpeg.dart';
 import 'package:http/http.dart' as http;
 import 'package:adaptive_action_sheet/adaptive_action_sheet.dart';
+import 'package:seojun_datalocal_app/service/index.dart';
 
 import '../model/Station.dart';
 
@@ -26,6 +27,15 @@ class _MonitorPageState extends State<MonitorPage> {
   List<Station> _projects = [];
   List<IO.Socket> _sockets = [];
   Map<String, GlobalKey> _globalKeys = {};
+
+  _getSize(GlobalKey key) {
+    if (key.currentContext != null) {
+      final RenderBox renderBox =
+      key.currentContext!.findRenderObject() as RenderBox;
+      Size size = renderBox.size;
+      return size;
+    }
+  }
 
   void _handleTouchStart(
       LongPressStartDetails details, String connectIp, GlobalKey? key) {
@@ -52,15 +62,6 @@ class _MonitorPageState extends State<MonitorPage> {
 
   void _handleTouchEnd(LongPressEndDetails details, String connectIp) {
     _postJsonHttp('http://' + connectIp + '/pantilt', {'action': 'stop'});
-  }
-
-  _getSize(GlobalKey key) {
-    if (key.currentContext != null) {
-      final RenderBox renderBox =
-          key.currentContext!.findRenderObject() as RenderBox;
-      Size size = renderBox.size;
-      return size;
-    }
   }
 
   void _getUser() async {
@@ -107,28 +108,12 @@ class _MonitorPageState extends State<MonitorPage> {
         station.stationInfo
             .where((stationData) => stationData.activate)
             .forEach((stationData) async {
-          if (stationData.type == 'int') {
-            value[stationData.name] = '0';
-          }
-
-          if (stationData.type == 'float') {
-            value[stationData.name] = '0.0';
-          }
-
-          if (stationData.type == 'string') {
-            value[stationData.name] = 'Nan';
-          }
-
-          if (stationData.type == 'bool') {
-            value[stationData.name] = 'true';
-          }
+          value[stationData.name] = '';
 
           var res = await http.read(Uri.parse(
               'http://' + station.connectIp + '/nodeId/' + stationData.nodeId));
           var parsed = json.decode(res);
-          setState(() {
-            station.data[stationData.name] = parsed['value'].toString();
-          });
+          station.data[stationData.name] = parsed['value'].toString();
 
           socket.on(stationData.name, (v) {
             if (mounted == true) {
@@ -138,6 +123,7 @@ class _MonitorPageState extends State<MonitorPage> {
             }
           });
         });
+
         station.data = value;
         projects.add(station);
       });

@@ -5,8 +5,6 @@ class Station {
   late List<StationData> stationInfo;
   late Map<String, dynamic> data;
 
-  Station(this.stationName, this.connectIp, this.isConnect, this.stationInfo);
-
   Station.fromJson(Map<String, dynamic> json) {
     stationName = json['stationName'];
     connectIp = json['connectIp'];
@@ -22,15 +20,11 @@ class Station {
 class StationData {
   late String name;
   late String nodeId;
-  late String type;
   late bool activate;
-
-  StationData(this.name, this.nodeId, this.type, this.activate);
 
   StationData.fromJson(Map<String, dynamic> json) {
     name = json['name'];
     nodeId = json['nodeId'];
-    type = json['type'];
     activate = json['value'];
   }
 
@@ -38,7 +32,6 @@ class StationData {
       {
         'name': name,
         'nodeId': nodeId,
-        'type': type,
         'actiavte': activate
       };
 }
