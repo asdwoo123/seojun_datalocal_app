@@ -16,7 +16,7 @@ class HistoryPage extends StatefulWidget {
 }
 
 class _HistoryPageState extends State<HistoryPage> {
-  late Future myFuture;
+  Future? myFuture;
   List<Station> _projects = [];
   int _stationIndex = 0;
   int _page = 0;
@@ -134,7 +134,6 @@ class _HistoryPageState extends State<HistoryPage> {
       }
     });
     _getUser();
-    myFuture = _getData();
     super.initState();
   }
 
@@ -238,6 +237,7 @@ class _HistoryPageState extends State<HistoryPage> {
             ],
           ),
         ),
+        (myFuture != null) ?
         FutureBuilder(
             future: myFuture,
             builder: (BuildContext context, AsyncSnapshot snapshot) {
@@ -262,7 +262,7 @@ class _HistoryPageState extends State<HistoryPage> {
                   ),
                 );
               }
-            }),
+            }) : Container(),
         (_isLoading) ? Container(
             height: 80,
             child: Center(

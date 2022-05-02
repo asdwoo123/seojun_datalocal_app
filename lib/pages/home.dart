@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:seojun_datalocal_app/pages/History.dart';
-import 'package:seojun_datalocal_app/pages/kakao.dart';
 import 'package:seojun_datalocal_app/pages/monitor.dart';
 import 'package:seojun_datalocal_app/pages/project.dart';
 import 'package:seojun_datalocal_app/pages/setting.dart';

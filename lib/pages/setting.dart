@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
 import 'package:seojun_datalocal_app/model/Settings.dart';
+import 'package:seojun_datalocal_app/pages/manual.dart';
 
 import '../components/Custom_FormField.dart';
 import '../components/Custom_label.dart';
@@ -52,6 +53,11 @@ class _SettingPageState extends State<SettingPage> {
   }
 
   void _saveSettings() async {
+    if (_settingsData!.pantilt.active) {
+      var speed = _settingsData!.pantilt.speed;
+      var length = _settingsData!.pantilt.length;
+    }
+
     http.Response res = await http.post(
         Uri.parse('http://' + _connectIp + '/settings'),
         headers: {
@@ -87,6 +93,15 @@ class _SettingPageState extends State<SettingPage> {
             ),*/
             actions: [
               TextButton(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const ManualPage()));
+                  },
+                  child: const Text(
+                    'Help',
+                    style: TextStyle(color: Colors.black),
+                  )),
+              TextButton(
                   onPressed: _saveSettings,
                   child: const Text(
                     'Save',
@@ -103,8 +118,9 @@ class _SettingPageState extends State<SettingPage> {
               children: [
                 Row(
                   children: [
-                    CustomLabel(text: 'IP'),
-                    Spacer(),
+                    Expanded(
+                      child: CustomLabel(text: 'IP'),
+                    ),
                     Expanded(
                         flex: 2,
                         child: CustomFormField(
@@ -127,9 +143,8 @@ class _SettingPageState extends State<SettingPage> {
                 Row(
                   children: <Widget>[
                     Expanded(flex: 1, child: CustomLabel(text: 'Password')),
-                    Spacer(),
                     Expanded(
-                        flex: 3,
+                        flex: 2,
                         child: CustomFormField(
                             password: true,
                             controller: _passwordController,
@@ -173,10 +188,11 @@ class _SettingPageState extends State<SettingPage> {
                         children: <Widget>[
                           Row(
                             children: [
-                              Text('EndPoint'),
-                              Spacer(),
                               Expanded(
-                                  flex: 5,
+                                child: Text('EndPoint'),
+                              ),
+                              Expanded(
+                                  flex: 3,
                                   child: CustomFormField(
                                       controller:
                                           _settingsData!.endpointController,
@@ -197,8 +213,7 @@ class _SettingPageState extends State<SettingPage> {
                           ),
                           Row(
                             children: [
-                              Text('port'),
-                              Spacer(),
+                              Expanded(child: Text('Port')),
                               Expanded(
                                   child: CustomFormField(
                                       controller: _settingsData!.portController,
@@ -218,8 +233,24 @@ class _SettingPageState extends State<SettingPage> {
                           SizedBox(
                             height: 10,
                           ),
+                          Row(
+                            children: [
+                              Expanded(child: Text('Camera')),
+                              Spacer(),
+                              Switch(
+                                  value: _settingsData!.camera,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _settingsData!.camera = value;
+                                    });
+                                  })
+                            ],
+                          ),
+                          SizedBox(
+                            height: 10,
+                          ),
                           Text(
-                            'Camera & Pantilt',
+                            'Pantilt',
                             style: TextStyle(fontWeight: FontWeight.bold),
                           ),
                           Row(
@@ -240,10 +271,10 @@ class _SettingPageState extends State<SettingPage> {
                           ),
                           Row(
                             children: <Widget>[
-                              Text('Length'),
-                              Spacer(),
+                              Expanded(child: Text('Length')),
                               Expanded(
                                   child: CustomFormField(
+                                      number: true,
                                       controller: _settingsData!
                                           .pantilt.speedController,
                                       onChange: (value) {
@@ -264,10 +295,10 @@ class _SettingPageState extends State<SettingPage> {
                           ),
                           Row(
                             children: <Widget>[
-                              Text('Speed'),
-                              Spacer(),
+                              Expanded(child: Text('Speed')),
                               Expanded(
                                   child: CustomFormField(
+                                    number: true,
                                       controller: _settingsData!
                                           .pantilt.speedController,
                                       onChange: (value) {
@@ -305,8 +336,7 @@ class _SettingPageState extends State<SettingPage> {
                           ),
                           Row(
                             children: <Widget>[
-                              Text('start'),
-                              Spacer(),
+                              Expanded(child: Text('start')),
                               Expanded(
                                   flex: 2,
                                   child: CustomFormField(
@@ -329,8 +359,7 @@ class _SettingPageState extends State<SettingPage> {
                           ),
                           Row(
                             children: <Widget>[
-                              Text('reset'),
-                              Spacer(),
+                              Expanded(child: Text('reset')),
                               Expanded(
                                   flex: 2,
                                   child: CustomFormField(
@@ -353,8 +382,7 @@ class _SettingPageState extends State<SettingPage> {
                           ),
                           Row(
                             children: <Widget>[
-                              Text('stop'),
-                              Spacer(),
+                              Expanded(child: Text('stop')),
                               Expanded(
                                   flex: 2,
                                   child: CustomFormField(
@@ -394,8 +422,7 @@ class _SettingPageState extends State<SettingPage> {
                           ),
                           Row(
                             children: <Widget>[
-                              Text('Table'),
-                              Spacer(),
+                              Expanded(child: Text('Table')),
                               Expanded(
                                   flex: 2,
                                   child: CustomFormField(
@@ -418,8 +445,7 @@ class _SettingPageState extends State<SettingPage> {
                           ),
                           Row(
                             children: <Widget>[
-                              Text('Complete'),
-                              Spacer(),
+                              Expanded(child: Text('Complete')),
                               Expanded(
                                   flex: 2,
                                   child: CustomFormField(
@@ -544,7 +570,7 @@ class _SettingPageState extends State<SettingPage> {
                                     _settingsData!.node.add(Node.fromJson({
                                       'name': '',
                                       'nodeId': '',
-                                      'active': true
+                                      'value': true
                                     }));
                                   });
                                 },

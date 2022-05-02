@@ -4,6 +4,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/painting.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:seojun_datalocal_app/theme.dart';
@@ -113,7 +114,9 @@ class _MonitorPageState extends State<MonitorPage> {
           var res = await http.read(Uri.parse(
               'http://' + station.connectIp + '/nodeId/' + stationData.nodeId));
           var parsed = json.decode(res);
-          station.data[stationData.name] = parsed['value'].toString();
+          setState(() {
+            station.data[stationData.name] = parsed['value'].toString();
+          });
 
           socket.on(stationData.name, (v) {
             if (mounted == true) {
@@ -137,10 +140,11 @@ class _MonitorPageState extends State<MonitorPage> {
     return 'http://' + connectIp + '?action=stream';
   }
 
-  void _postJsonHttp(String connectUrl, Map<String, dynamic> data) {
-    http.post(Uri.parse(connectUrl),
+  void _postJsonHttp(String connectUrl, Map<String, dynamic> data) async {
+    http.Response response = await http.post(Uri.parse(connectUrl),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(data));
+    Fluttertoast.showToast(msg: jsonDecode(response.body)['message']);
   }
 
   void _showRemoteSheet(String connectIp) {
@@ -173,18 +177,23 @@ class _MonitorPageState extends State<MonitorPage> {
   }
 
   void _shareKaKao(Station station) async {
+    String imgUrl = '';
     try {
-      var rng = new Random();
-      Directory tempDir = await getTemporaryDirectory();
-      String tempPath = tempDir.path;
-      File file = new File('$tempPath' + (rng.nextInt(100).toString() + '.jpg'));
-      http.Response response = await http.get(Uri.parse('http://' + station.connectIp + '/?action=capture'));
-      await file.writeAsBytes(response.bodyBytes);
-      ImageUploadResult imageUploadResult = await LinkClient.instance.uploadImage(image: file);
-      final FeedTemplate defaultFeed = FeedTemplate(content: Content(
+      if (station.isCamera) {
+        var rng = new Random();
+        Directory tempDir = await getTemporaryDirectory();
+        String tempPath = tempDir.path;
+        File file = new File('$tempPath' + (rng.nextInt(100).toString() + '.jpg'));
+        http.Response response = await http.get(Uri.parse('http://' + station.connectIp + '/?action=capture'));
+        await file.writeAsBytes(response.bodyBytes);
+        ImageUploadResult imageUploadResult = await LinkClient.instance.uploadImage(image: file);
+        imgUrl = imageUploadResult.infos.original.url;
+      }
+
+      FeedTemplate defaultFeed = FeedTemplate(content: Content(
           title: station.stationName,
           imageUrl: Uri.parse(
-              imageUploadResult.infos.original.url
+              imgUrl
           ),
           link: Link(
               webUrl: Uri.parse(''),
@@ -198,6 +207,7 @@ class _MonitorPageState extends State<MonitorPage> {
                 return ItemInfo(item: stationData.name, itemOp: station.data[stationData.name]);
               }).toList()
           ));
+
       var isKaKao = await LinkClient.instance.isKakaoLinkAvailable();
       if (isKaKao) {
         Uri shareUrl = await LinkClient.instance.defaultTemplate(template: defaultFeed);
@@ -264,7 +274,7 @@ class _MonitorPageState extends State<MonitorPage> {
                         ),
                       ),
                       SizedBox(width: 10,),
-                      ElevatedButton(onPressed: () {
+                      (station.isRemote) ? ElevatedButton(onPressed: () {
                         _showRemoteSheet(station.connectIp);
                       }, child: Text('Remote'), style: ElevatedButton.styleFrom(
                         primary: primaryBlue,
@@ -273,13 +283,13 @@ class _MonitorPageState extends State<MonitorPage> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      ),
+                      ) : Container(),
                     ],
                   ),
                   const SizedBox(
                     height: 20,
                   ),
-                  GestureDetector(
+                  (station.isCamera) ? GestureDetector(
                       onLongPressStart: (LongPressStartDetails details) {
                         _handleTouchStart(details, station.connectIp,
                             _globalKeys[station.stationName]);
@@ -294,7 +304,7 @@ class _MonitorPageState extends State<MonitorPage> {
                         error: (context, error, stack) {
                           return Container();
                         },
-                      )),
+                      )) : Container(),
                   const SizedBox(
                     height: 20,
                   ),
@@ -302,7 +312,7 @@ class _MonitorPageState extends State<MonitorPage> {
                     children: [
                       Text('상태'),
                       Spacer(),
-                      Text((station.isConnect) ? '연결' : '연결되지않음',
+                      Text((station.isConnect) ? 'Connect' : 'Disconnect',
                         style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.w500),)
                     ],
                   ),

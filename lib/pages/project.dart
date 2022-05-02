@@ -22,6 +22,8 @@ class _ProjectPageState extends State<ProjectPage> {
   String _stationName = '';
   String _connectIp = '';
   String _password = '';
+  bool _isCamera = true;
+  bool _isRemote = true;
   List<dynamic> _stationData = [];
   bool _create = true;
   String title = '새 프로젝트';
@@ -69,7 +71,9 @@ class _ProjectPageState extends State<ProjectPage> {
       'stationName': _stationName,
       'connectIp': _connectIp,
       'activate': true,
-      'stationData': _stationData
+      'stationData': _stationData,
+      'isCamera': _isCamera,
+      'isRemote': _isRemote
     };
 
     if (_create) {
@@ -115,6 +119,8 @@ class _ProjectPageState extends State<ProjectPage> {
     if (parsed['success']) {
       _setState(() {
         _stationData = parsed['data'];
+        _isCamera = parsed['camera'];
+        _isRemote = parsed['remote'];
       });
     } else {
       Fluttertoast.showToast(msg: 'Passwords do not match.');
@@ -303,7 +309,7 @@ class _ProjectPageState extends State<ProjectPage> {
             children: <Widget>[
               ElevatedButton(
                 onPressed: _getUser,
-                child: const Text('초기화'),
+                child: const Text('Reset'),
                 style: ElevatedButton.styleFrom(
                     fixedSize: Size(90, 40), primary: primaryBlue),
               ),
@@ -312,7 +318,7 @@ class _ProjectPageState extends State<ProjectPage> {
               ),
               ElevatedButton(
                   onPressed: _saveProject,
-                  child: const Text('저장'),
+                  child: const Text('Save'),
                   style: ElevatedButton.styleFrom(
                       fixedSize: Size(90, 40), primary: primaryBlue)),
               SizedBox(
@@ -325,7 +331,7 @@ class _ProjectPageState extends State<ProjectPage> {
                     });
                     _showFullDialog();
                   },
-                  child: const Text('설비 등록'),
+                  child: const Text('New'),
                   style: ElevatedButton.styleFrom(
                       fixedSize: Size(90, 40), primary: primaryBlue)),
             ],
