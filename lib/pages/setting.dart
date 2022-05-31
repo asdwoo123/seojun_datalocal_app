@@ -20,15 +20,21 @@ class SettingPage extends StatefulWidget {
 class _SettingPageState extends State<SettingPage> {
   String _connectIp = '';
   String _password = '';
+  String ip = '';
+  int mode = 1;
   Settings? _settingsData = null;
   final TextEditingController _connectIpController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
   void _connectSettings() async {
-    var res = await http.read(Uri.parse('http://' + _connectIp + '/settings'));
+    bool notDomain = _connectIp.contains(":");
+    mode = notDomain ? 2 : 1;
+    var url = (notDomain) ? 'http://' + _connectIp + '/settings' : 'https://' + _connectIp + '.loca.lt/settings';
+    var res = await http.read(Uri.parse(url));
     var parsed = json.decode(res);
     setState(() {
       _settingsData = Settings.fromJson(parsed);
+      _settingsData?.domainController.text = _settingsData!.domain;
       _settingsData?.endpointController.text = _settingsData!.endpoint;
       _settingsData?.portController.text = _settingsData!.port.toString();
       _settingsData?.node.forEach((e) {
@@ -59,7 +65,7 @@ class _SettingPageState extends State<SettingPage> {
     }
 
     http.Response res = await http.post(
-        Uri.parse('http://' + _connectIp + '/settings'),
+        Uri.parse('https://' + _connectIp + '.loca.lt/settings'),
         headers: {
           'Content-Type': 'application/json',
           'max-connection-per-host': '5'
@@ -92,7 +98,7 @@ class _SettingPageState extends State<SettingPage> {
               },
             ),*/
             actions: [
-              TextButton(
+              /*TextButton(
                   onPressed: () {
                     Navigator.of(context).push(
                         MaterialPageRoute(builder: (_) => const ManualPage()));
@@ -100,7 +106,7 @@ class _SettingPageState extends State<SettingPage> {
                   child: const Text(
                     'Help',
                     style: TextStyle(color: Colors.black),
-                  )),
+                  )),*/
               TextButton(
                   onPressed: _saveSettings,
                   child: const Text(
@@ -186,6 +192,31 @@ class _SettingPageState extends State<SettingPage> {
                 (_settingsData != null)
                     ? Column(
                         children: <Widget>[
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text('Domain'),
+                              ),
+                              Expanded(
+                                  flex: 3,
+                                  child: CustomFormField(
+                                      controller:
+                                      _settingsData!.domainController,
+                                      onChange: (value) {
+                                        setState(() {
+                                          _settingsData!.domain = value;
+                                        });
+                                      },
+                                      onPressed: () {
+                                        setState(() {
+                                          _settingsData!.domain = '';
+                                        });
+                                      })),
+                            ],
+                          ),
+                          SizedBox(
+                            height: 10,
+                          ),
                           Row(
                             children: [
                               Expanded(

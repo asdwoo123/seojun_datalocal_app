@@ -1,17 +1,22 @@
 import 'package:flutter/cupertino.dart';
 
 class Settings {
+  String domain = '';
   String endpoint = '';
+  String ip = '';
+  int mode = 2;
   int port = 3000;
   bool camera = true;
   late Pantilt pantilt;
   late Remote remote;
   late Save save;
   List<Node> node = [];
+  TextEditingController domainController = TextEditingController();
   TextEditingController endpointController = TextEditingController();
   TextEditingController portController = TextEditingController();
 
   Settings.fromJson(Map<String, dynamic> json) {
+    domain = json['domain'];
     endpoint = json['endpoint'];
     port = json['port'];
     camera = json['camera'];
@@ -26,7 +31,7 @@ class Settings {
   }
 
   Map<String, dynamic> toJson() =>
-      {'endpoint': endpoint, 'port': port, 'camera': camera, 'pantilt': pantilt.toJson(), 'remote': remote.toJson(), 'save': save.toJson(),
+      {'domain': domain, 'endpoint': endpoint, 'port': port, 'camera': camera, 'pantilt': pantilt.toJson(), 'remote': remote.toJson(), 'save': save.toJson(),
       'node': node.map((e) => e.toJson()).toList()};
 }
 

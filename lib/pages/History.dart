@@ -27,8 +27,8 @@ class _HistoryPageState extends State<HistoryPage> {
   List<DataColumn> _columns = [];
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _barcodeController = TextEditingController();
-  DateTimeRange _dateTimeRange = DateTimeRange(start: DateTime.now().subtract(Duration(days: 2)), end: DateTime.now());
-
+  DateTimeRange _dateTimeRange = DateTimeRange(
+      start: DateTime.now().subtract(Duration(days: 2)), end: DateTime.now());
 
   void _getUser() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -52,9 +52,16 @@ class _HistoryPageState extends State<HistoryPage> {
       var station = _projects[_stationIndex];
       var start_period = _dateTimeRange.start;
       var end_period = _dateTimeRange.end;
-      var res = await http
-          .read(Uri.parse('http://' + station.connectIp + '/data?page=' + _page.toString() + '&barcode=' + _barcode
-      + '&start_period=' + start_period.toIso8601String() + '&end_period=' + end_period.toIso8601String() ));
+      var res = await http.read(Uri.parse('http://' +
+          station.connectIp +
+          '/data?page=' +
+          _page.toString() +
+          '&barcode=' +
+          _barcode +
+          '&start_period=' +
+          start_period.toIso8601String() +
+          '&end_period=' +
+          end_period.toIso8601String()));
       if (res == '[]') {
         setState(() {
           _pageEnd = true;
@@ -70,7 +77,6 @@ class _HistoryPageState extends State<HistoryPage> {
         }
       }
 
-
       var columns = jsonDecode(res)[0]
           .keys
           .toList()
@@ -78,15 +84,16 @@ class _HistoryPageState extends State<HistoryPage> {
           .toList();
 
       var rows = jsonDecode(res)
-      .map((v) {
-        v['time'] = DateFormat('yyyy-MM-dd kk:mm:ss').format(DateTime.parse(v['time']));
-        return v;
-      })
+          .map((v) {
+            v['time'] = DateFormat('yyyy-MM-dd kk:mm:ss')
+                .format(DateTime.parse(v['time']));
+            return v;
+          })
           .map((value) => value.values.map<DataCell>((v) {
-        var value;
-        value = v ?? 0;
-        return DataCell(Text(value.toString()));
-      }).toList())
+                var value;
+                value = v ?? 0;
+                return DataCell(Text(value.toString()));
+              }).toList())
           .map<DataRow>((r) => DataRow(cells: r))
           .toList();
 
@@ -111,9 +118,11 @@ class _HistoryPageState extends State<HistoryPage> {
   }
 
   Future pickDateRange() async {
-    DateTimeRange? newDateRange = await showDateRangePicker(context: context,
+    DateTimeRange? newDateRange = await showDateRangePicker(
+        context: context,
         initialDateRange: _dateTimeRange,
-        firstDate: DateTime(DateTime.now().year - 5), lastDate: DateTime(DateTime.now().year + 1));
+        firstDate: DateTime(DateTime.now().year - 5),
+        lastDate: DateTime(DateTime.now().year + 1));
 
     setState(() {
       _dateTimeRange = newDateRange ?? _dateTimeRange;
@@ -123,8 +132,10 @@ class _HistoryPageState extends State<HistoryPage> {
   @override
   void initState() {
     _scrollController.addListener(() {
-      if(_scrollController.position.pixels  == _scrollController.position.maxScrollExtent && !_isLoading){
-        if (!_pageEnd){
+      if (_scrollController.position.pixels ==
+              _scrollController.position.maxScrollExtent &&
+          !_isLoading) {
+        if (!_pageEnd) {
           setState(() {
             _isLoading = true;
             _page = _page + 1;
@@ -150,132 +161,158 @@ class _HistoryPageState extends State<HistoryPage> {
     final end = _dateTimeRange.end;
 
     if (_projects.isNotEmpty) {
-    return ListView(
-      controller: _scrollController,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(15.0, 12.0, 0, 12.0),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    flex: 2,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(10)
+      return ListView(
+        controller: _scrollController,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(15.0, 12.0, 0, 12.0),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    /*Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(10)),
+                        child: Padding(
+                          padding:
+                              const EdgeInsets.only(left: 12, right: 12),
+                          child: Flexible(
+                            child: DropdownButton(
+                              isExpanded: true,
+                              value: _projects[_stationIndex].stationName,
+                              items: _projects.map((station) {
+                                return DropdownMenuItem(
+                                    value: station.stationName,
+                                    child: Text(station.stationName,
+                                      overflow: TextOverflow.ellipsis,
+                                    )
+                                );
+                              }).toList(),
+                              onChanged: (Object? value) {
+                                var index = _projects.indexOf(_projects
+                                    .where((station) =>
+                                        station.stationName == value)
+                                    .toList()[0]);
+                                setState(() {
+                                  _stationIndex = index;
+                                });
+                              },
+                              underline: SizedBox(),
+                            ),
+                          ),
+                        ),
                       ),
-                      child: Padding(
-                        padding: const EdgeInsets.only(left: 12, right: 12),
-                        child: DropdownButton(value: _projects[_stationIndex].stationName, items: _projects.map((station) {
-                          return DropdownMenuItem(value: station.stationName, child: Text(station.stationName));
-                        }).toList(), onChanged: (Object? value) {
-                          var index = _projects.indexOf(_projects.where((station) => station.stationName == value).toList()[0]);
+                    ),*/
+                    SizedBox(
+                      width: 10,
+                    ),
+                    Expanded(
+                      flex: 2,
+                      child: TextFormField(
+                        decoration: InputDecoration(
+                            border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(24.0),
+                                borderSide: BorderSide(
+                                    width: 0, style: BorderStyle.none)),
+                            contentPadding: const EdgeInsets.all(12.0),
+                            filled: true,
+                            fillColor: Colors.white,
+                            hintText: 'Search barcode',
+                            suffixIcon: _barcodeController.text.isEmpty
+                                ? null
+                                : IconButton(
+                                    onPressed: () {
+                                      _barcodeController.clear();
+                                      setState(() {
+                                        _barcode = '';
+                                      });
+                                    },
+                                    icon: Icon(Icons.clear))),
+                        controller: _barcodeController,
+                        onChanged: (value) {
                           setState(() {
-                            _stationIndex = index;
+                            _barcode = value;
                           });
-                        }, underline: SizedBox(),),
+                        },
                       ),
                     ),
-                  ),
-                  SizedBox(width: 10,),
-                  Expanded(
-                    flex: 4,
-                    child: TextFormField(
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(24.0),
-                           borderSide: BorderSide(
-                            width: 0,
-                            style: BorderStyle.none
-                          )
-                        ),
-                        contentPadding: const EdgeInsets.all(12.0),
-                        filled: true,
-                        fillColor: Colors.white,
-                        hintText: 'Search barcode',
-                        suffixIcon: _barcodeController.text.isEmpty ? null : IconButton(
-                          onPressed: () {
-                            _barcodeController.clear();
-                            setState(() {
-                              _barcode = '';
-                            });
-                          },
-                          icon: Icon(Icons.clear)
-                        )
-                      ),
-                      controller: _barcodeController,
-                      onChanged: (value) {
-                        setState(() {
-                          _barcode = value;
-                        });
-                      },
+                    SizedBox(
+                      width: 10,
                     ),
-                  ),
-                  SizedBox(width: 10,),
-                  SizedBox(
-                    height: 48,
-                    width: 48,
-                    child: ElevatedButton(onPressed: () {
-                      setState(() {
-                        _page = 0;
-                        _pageEnd = false;
-                        myFuture = _getData();
-                      });
-                    }, child: Icon(Icons.search_sharp, size: 20,),
-                      style: ElevatedButton.styleFrom(
-                        primary: primaryBlue,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(24),
+                    SizedBox(
+                      height: 48,
+                      width: 48,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          setState(() {
+                            _page = 0;
+                            _pageEnd = false;
+                            myFuture = _getData();
+                          });
+                        },
+                        child: Icon(
+                          Icons.search_sharp,
+                          size: 20,
                         ),
-                      ),),
-                  ),
-                  SizedBox(width: 15,)
-                ],
-              ),
-            ],
-          ),
-        ),
-        (myFuture != null) ?
-        FutureBuilder(
-            future: myFuture,
-            builder: (BuildContext context, AsyncSnapshot snapshot) {
-              if (snapshot.hasData == false) {
-                return Container();
-              } else {
-                return Container(
-                  margin: EdgeInsets.fromLTRB(15, 10, 0, 15),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(10)
-                  ),
-                  child: SingleChildScrollView(
-                    physics: BouncingScrollPhysics(),
-                    scrollDirection: Axis.horizontal,
-                    child: SingleChildScrollView(
-                        physics: BouncingScrollPhysics(),
-                        scrollDirection: Axis.vertical,
-                        child: DataTable(
-                            columns: snapshot.data['columns'],
-                            rows: snapshot.data['rows'])),
-                  ),
-                );
-              }
-            }) : Container(),
-        (_isLoading) ? Container(
-            height: 80,
-            child: Center(
-              child: CircularProgressIndicator(
-                valueColor: new AlwaysStoppedAnimation(Colors.blue[100]),
-                backgroundColor: Colors.blue[600],
-              ),
+                        style: ElevatedButton.styleFrom(
+                          primary: primaryBlue,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 15,
+                    )
+                  ],
+                ),
+              ],
             ),
-          ) : Container()
-      ],
-    );
-  } else {
+          ),
+          (myFuture != null)
+              ? FutureBuilder(
+                  future: myFuture,
+                  builder: (BuildContext context, AsyncSnapshot snapshot) {
+                    if (snapshot.hasData == false) {
+                      return Container();
+                    } else {
+                      return Container(
+                        margin: EdgeInsets.fromLTRB(15, 10, 0, 15),
+                        decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(10)),
+                        child: SingleChildScrollView(
+                          physics: BouncingScrollPhysics(),
+                          scrollDirection: Axis.horizontal,
+                          child: SingleChildScrollView(
+                              physics: BouncingScrollPhysics(),
+                              scrollDirection: Axis.vertical,
+                              child: DataTable(
+                                  columns: snapshot.data['columns'],
+                                  rows: snapshot.data['rows'])),
+                        ),
+                      );
+                    }
+                  })
+              : Container(),
+          (_isLoading)
+              ? Container(
+                  height: 80,
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      valueColor: new AlwaysStoppedAnimation(Colors.blue[100]),
+                      backgroundColor: Colors.blue[600],
+                    ),
+                  ),
+                )
+              : Container()
+        ],
+      );
+    } else {
       return Container();
     }
-    }
+  }
 }

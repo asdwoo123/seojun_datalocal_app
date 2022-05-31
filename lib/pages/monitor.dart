@@ -58,11 +58,11 @@ class _MonitorPageState extends State<MonitorPage> {
     } else {
       action = 'bottom';
     }
-    _postJsonHttp('http://' + connectIp + '/pantilt', {'action': action});
+    _postJsonHttp('https://' + connectIp + '.loca.lt/pantilt', {'action': action});
   }
 
   void _handleTouchEnd(LongPressEndDetails details, String connectIp) {
-    _postJsonHttp('http://' + connectIp + '/pantilt', {'action': 'stop'});
+    _postJsonHttp('https://' + connectIp + '.loca.lt/pantilt', {'action': 'stop'});
   }
 
   void _getUser() async {
@@ -76,7 +76,7 @@ class _MonitorPageState extends State<MonitorPage> {
         var station = Station.fromJson(project);
         _globalKeys[station.stationName] = GlobalKey();
         IO.Socket socket = IO.io(
-            'http://' + station.connectIp,
+            'https://' + station.connectIp + '.loca.lt',
             IO.OptionBuilder()
                 .setTransports(['websocket'])
                 .enableReconnection()
@@ -112,7 +112,7 @@ class _MonitorPageState extends State<MonitorPage> {
           value[stationData.name] = '';
 
           var res = await http.read(Uri.parse(
-              'http://' + station.connectIp + '/nodeId/' + stationData.nodeId));
+              'https://' + station.connectIp + '.loca.lt/nodeId/' + stationData.nodeId));
           var parsed = json.decode(res);
           setState(() {
             station.data[stationData.name] = parsed['value'].toString();
@@ -137,7 +137,7 @@ class _MonitorPageState extends State<MonitorPage> {
   }
 
   String _cameraUrl(String connectIp) {
-    return 'http://' + connectIp + '?action=stream';
+    return 'https://' + connectIp + '.loca.lt?action=stream';
   }
 
   void _postJsonHttp(String connectUrl, Map<String, dynamic> data) async {
@@ -153,15 +153,15 @@ class _MonitorPageState extends State<MonitorPage> {
         actions:
     <BottomSheetAction>[
       BottomSheetAction(title: Text('Start'), onPressed: () {
-        _postJsonHttp('http://' + connectIp + '/remote', {'action': 'start'});
+        _postJsonHttp('https://' + connectIp + '.loca.lt/remote', {'action': 'start'});
         Navigator.pop(context);
       }),
       BottomSheetAction(title: Text('Reset'), onPressed: () {
-        _postJsonHttp('http://' + connectIp + '/remote', {'action': 'reset'});
+        _postJsonHttp('https://' + connectIp + '.loca.lt/remote', {'action': 'reset'});
         Navigator.pop(context);
       }),
       BottomSheetAction(title: Text('Stop'), onPressed: () {
-        _postJsonHttp('http://' + connectIp + '/remote', {'action': 'stop'});
+        _postJsonHttp('https://' + connectIp + '.loca.lt/remote', {'action': 'stop'});
         Navigator.pop(context);
       }),
     ]);
@@ -184,7 +184,7 @@ class _MonitorPageState extends State<MonitorPage> {
         Directory tempDir = await getTemporaryDirectory();
         String tempPath = tempDir.path;
         File file = new File('$tempPath' + (rng.nextInt(100).toString() + '.jpg'));
-        http.Response response = await http.get(Uri.parse('http://' + station.connectIp + '/?action=capture'));
+        http.Response response = await http.get(Uri.parse('https://' + station.connectIp + '.loca.lt/?action=capture'));
         await file.writeAsBytes(response.bodyBytes);
         ImageUploadResult imageUploadResult = await LinkClient.instance.uploadImage(image: file);
         imgUrl = imageUploadResult.infos.original.url;
@@ -252,10 +252,17 @@ class _MonitorPageState extends State<MonitorPage> {
                 children: [
                   Row(
                     children: [
-                      Text(
-                        station.stationName,
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      Flexible(
+                        flex: 10,
+                        child: Container(
+                          child: Text(
+                            station.stationName,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                        ),
                       ),
+
                       Spacer(),
                       OutlinedButton(
                         onPressed: () {
