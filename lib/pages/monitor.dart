@@ -68,6 +68,7 @@ class _MonitorPageState extends State<MonitorPage> {
   void _getUser() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? userPref = prefs.getString('user');
+    print(userPref);
     if (userPref != null) {
       var userInfo = jsonDecode(userPref);
       List<Station> projects = [];

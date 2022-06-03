@@ -64,8 +64,12 @@ class _SettingPageState extends State<SettingPage> {
       var length = _settingsData!.pantilt.length;
     }
 
+    bool notDomain = _connectIp.contains(":");
+    mode = notDomain ? 2 : 1;
+    var url = (notDomain) ? 'http://' + _connectIp + '/settings' : 'https://' + _connectIp + '.loca.lt/settings';
+
     http.Response res = await http.post(
-        Uri.parse('https://' + _connectIp + '.loca.lt/settings'),
+        Uri.parse(url),
         headers: {
           'Content-Type': 'application/json',
           'max-connection-per-host': '5'

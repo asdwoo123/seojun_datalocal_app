@@ -115,7 +115,11 @@ class _ProjectPageState extends State<ProjectPage> {
 
   void _connectStation(StateSetter _setState) async {
 
-    var res = await http.read(Uri.parse('https://' + _connectIp + '.loca.lt/setting?password=' + _password));
+    bool notDomain = _connectIp.contains(":");
+    mode = notDomain ? 2 : 1;
+    var url = (notDomain) ? 'http://' + _connectIp : 'https://' + _connectIp + '.loca.lt';
+
+    var res = await http.read(Uri.parse(url + '/setting?password=' + _password));
     var parsed = json.decode(res);
     if (parsed['success']) {
       _setState(() {
