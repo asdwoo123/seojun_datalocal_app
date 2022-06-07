@@ -1,7 +1,7 @@
 class Station {
   late String stationName;
   late String connectIp;
-  int mode = 1;
+  bool isProxy = false;
   bool isConnect = false;
   bool isCamera = true;
   bool isRemote = true;
@@ -11,7 +11,6 @@ class Station {
   Station.fromJson(Map<String, dynamic> json) {
     stationName = json['stationName'];
     connectIp = json['connectIp'];
-    // mode = json['mode'];
     isCamera = json['isCamera'];
     isRemote = json['isRemote'];
     if (json['stationData'] != null) {

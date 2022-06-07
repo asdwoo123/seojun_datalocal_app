@@ -13,7 +13,6 @@ import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:flutter_mjpeg/flutter_mjpeg.dart';
 import 'package:http/http.dart' as http;
 import 'package:adaptive_action_sheet/adaptive_action_sheet.dart';
-import 'package:seojun_datalocal_app/service/index.dart';
 
 import '../model/Station.dart';
 
@@ -68,16 +67,17 @@ class _MonitorPageState extends State<MonitorPage> {
   void _getUser() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? userPref = prefs.getString('user');
-    print(userPref);
     if (userPref != null) {
       var userInfo = jsonDecode(userPref);
       List<Station> projects = [];
       userInfo['project'].forEach((project) {
         if (!project['activate']) return;
+        bool isProxy = project['connectIp'].contains(":");
         var station = Station.fromJson(project);
         _globalKeys[station.stationName] = GlobalKey();
+        var url = (isProxy) ? 'http://' + station.connectIp : 'https://' + station.connectIp + '.loca.lt';
         IO.Socket socket = IO.io(
-            'https://' + station.connectIp + '.loca.lt',
+            url,
             IO.OptionBuilder()
                 .setTransports(['websocket'])
                 .enableReconnection()
@@ -100,6 +100,7 @@ class _MonitorPageState extends State<MonitorPage> {
             });
           }
         });
+
         socket.onDisconnect((data) {
           if (mounted == true) {
             setState(() {
@@ -112,8 +113,10 @@ class _MonitorPageState extends State<MonitorPage> {
             .forEach((stationData) async {
           value[stationData.name] = '';
 
+          bool isProxy = station.connectIp.contains(":");
+          var url = (isProxy) ? 'http://' + station.connectIp : 'https://' + station.connectIp + '.loca.lt';
           var res = await http.read(Uri.parse(
-              'https://' + station.connectIp + '.loca.lt/nodeId/' + stationData.nodeId));
+              url + '/nodeId/' + stationData.nodeId));
           var parsed = json.decode(res);
           setState(() {
             station.data[stationData.name] = parsed['value'].toString();
@@ -138,7 +141,9 @@ class _MonitorPageState extends State<MonitorPage> {
   }
 
   String _cameraUrl(String connectIp) {
-    return 'https://' + connectIp + '.loca.lt?action=stream';
+    bool isProxy = connectIp.contains(":");
+    var url = (isProxy) ? 'http://' + connectIp : 'https://' + connectIp + '.loca.lt';
+    return url + '?action=stream';
   }
 
   void _postJsonHttp(String connectUrl, Map<String, dynamic> data) async {
