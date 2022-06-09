@@ -21,14 +21,12 @@ class _SettingPageState extends State<SettingPage> {
   String _connectIp = '';
   String _password = '';
   String ip = '';
-  int mode = 1;
   Settings? _settingsData = null;
   final TextEditingController _connectIpController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
   void _connectSettings() async {
     bool notDomain = _connectIp.contains(":");
-    mode = notDomain ? 2 : 1;
     var url = (notDomain) ? 'http://' + _connectIp + '/settings' : 'https://' + _connectIp + '.loca.lt/settings';
     var res = await http.read(Uri.parse(url));
     var parsed = json.decode(res);
@@ -65,7 +63,6 @@ class _SettingPageState extends State<SettingPage> {
     }
 
     bool notDomain = _connectIp.contains(":");
-    mode = notDomain ? 2 : 1;
     var url = (notDomain) ? 'http://' + _connectIp + '/settings' : 'https://' + _connectIp + '.loca.lt/settings';
 
     http.Response res = await http.post(
@@ -196,6 +193,14 @@ class _SettingPageState extends State<SettingPage> {
                 (_settingsData != null)
                     ? Column(
                         children: <Widget>[
+                          Row(
+                            children: <Widget>[
+                              Text('Ip'),
+                              Spacer(),
+                              Text(_settingsData!.ip, style: TextStyle(fontSize: 16),)
+                            ],
+                          ),
+                          SizedBox(height: 20,),
                           Row(
                             children: [
                               Expanded(

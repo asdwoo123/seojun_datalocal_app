@@ -52,8 +52,9 @@ class _HistoryPageState extends State<HistoryPage> {
       var station = _projects[_stationIndex];
       var start_period = _dateTimeRange.start;
       var end_period = _dateTimeRange.end;
-      var res = await http.read(Uri.parse('http://' +
-          station.connectIp +
+      bool isProxy = station.connectIp.contains(":");
+      var url = (isProxy) ? 'http://' + station.connectIp : 'https://' + station.connectIp + '.loca.lt';
+      var res = await http.read(Uri.parse(url +
           '/data?page=' +
           _page.toString() +
           '&barcode=' +

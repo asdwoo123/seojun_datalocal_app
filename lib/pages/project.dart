@@ -22,7 +22,6 @@ class _ProjectPageState extends State<ProjectPage> {
   String _stationName = '';
   String _connectIp = '';
   String _password = '';
-  int mode = 1;
   bool _isCamera = true;
   bool _isRemote = true;
   List<dynamic> _stationData = [];
@@ -116,7 +115,6 @@ class _ProjectPageState extends State<ProjectPage> {
   void _connectStation(StateSetter _setState) async {
 
     bool notDomain = _connectIp.contains(":");
-    mode = notDomain ? 2 : 1;
     var url = (notDomain) ? 'http://' + _connectIp : 'https://' + _connectIp + '.loca.lt';
 
     var res = await http.read(Uri.parse(url + '/setting?password=' + _password));

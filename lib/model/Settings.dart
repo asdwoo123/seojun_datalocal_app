@@ -4,7 +4,6 @@ class Settings {
   String domain = '';
   String endpoint = '';
   String ip = '';
-  int mode = 2;
   int port = 3000;
   bool camera = true;
   late Pantilt pantilt;
@@ -18,6 +17,7 @@ class Settings {
   Settings.fromJson(Map<String, dynamic> json) {
     domain = json['domain'];
     endpoint = json['endpoint'];
+    ip = json['ip'];
     port = json['port'];
     camera = json['camera'];
     pantilt = Pantilt.fromJson(json['pantilt']);
