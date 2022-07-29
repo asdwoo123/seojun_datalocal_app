@@ -51,7 +51,7 @@ class _SettingPageState extends State<SettingPage> {
           _settingsData!.save.complete;
       _settingsData?.save.fields.forEach((field) {
         field.nameController.text = field.name;
-        field.typeController.text = field.type;
+        field.nodeIdController.text = field.nodeId;
       });
     });
   }
@@ -518,7 +518,7 @@ class _SettingPageState extends State<SettingPage> {
                                   setState(() {
                                     _settingsData!.save.fields.add(
                                         Field.fromJson(
-                                            {'name': '', 'type': ''}));
+                                            {'name': '', 'nodeId': ''}));
                                   });
                                 },
                                 style: OutlinedButton.styleFrom(
@@ -542,56 +542,91 @@ class _SettingPageState extends State<SettingPage> {
                           Column(
                             children:
                                 _settingsData!.save.fields.map<Widget>((e) {
-                              return Container(
-                                margin: EdgeInsets.only(bottom: 10),
-                                child: Row(
-                                  children: <Widget>[
-                                    IconButton(
-                                        onPressed: () {
-                                          var index = _settingsData!.save.fields
-                                              .indexOf(e);
-                                          setState(() {
-                                            _settingsData!.save.fields
-                                                .removeAt(index);
-                                          });
-                                        },
-                                        color: Colors.red,
-                                        icon:
-                                            Icon(Icons.remove_circle_outline)),
-                                    Expanded(
-                                        flex: 2,
-                                        child: CustomFormField(
-                                            controller: e.nameController,
-                                            onChange: (value) {
-                                              setState(() {
-                                                e.name = value;
-                                              });
-                                            },
-                                            onPressed: () {
-                                              setState(() {
-                                                e.name = '';
-                                              });
-                                            })),
-                                    SizedBox(
-                                      width: 10,
-                                    ),
-                                    Expanded(
-                                        flex: 3,
-                                        child: CustomFormField(
-                                            controller: e.typeController,
-                                            onChange: (value) {
-                                              setState(() {
-                                                e.type = value;
-                                              });
-                                            },
-                                            onPressed: () {
-                                              setState(() {
-                                                e.type = '';
-                                              });
-                                            })),
-                                  ],
-                                ),
-                              );
+                                  if (e.name == 'barcode') {
+                                    return Container(
+                                      margin: EdgeInsets.only(bottom: 10),
+                                      child: Row(
+                                        children: <Widget>[
+                                          SizedBox(width: 50,),
+                                          Expanded(
+                                              flex: 2,
+                                              child: Text(e.name)
+                                          ),
+                                          SizedBox(
+                                            width: 10,
+                                          ),
+                                          Expanded(
+                                              flex: 3,
+                                              child: CustomFormField(
+                                                  controller: e.nodeIdController,
+                                                  hintText: 'NodeId',
+                                                  onChange: (value) {
+                                                    setState(() {
+                                                      e.nodeId = value;
+                                                    });
+                                                  },
+                                                  onPressed: () {
+                                                    setState(() {
+                                                      e.nodeId = '';
+                                                    });
+                                                  })),
+                                        ],
+                                      ),
+                                    );
+                                  } else {
+                                    return Container(
+                                      margin: EdgeInsets.only(bottom: 10),
+                                      child: Row(
+                                        children: <Widget>[
+                                          IconButton(
+                                              onPressed: () {
+                                                var index = _settingsData!.save.fields
+                                                    .indexOf(e);
+                                                setState(() {
+                                                  _settingsData!.save.fields
+                                                      .removeAt(index);
+                                                });
+                                              },
+                                              color: Colors.red,
+                                              icon:
+                                              Icon(Icons.remove_circle_outline)),
+                                          Expanded(
+                                              flex: 2,
+                                              child: CustomFormField(
+                                                  controller: e.nameController,
+                                                  hintText: 'Name',
+                                                  onChange: (value) {
+                                                    setState(() {
+                                                      e.name = value;
+                                                    });
+                                                  },
+                                                  onPressed: () {
+                                                    setState(() {
+                                                      e.name = '';
+                                                    });
+                                                  })),
+                                          SizedBox(
+                                            width: 10,
+                                          ),
+                                          Expanded(
+                                              flex: 3,
+                                              child: CustomFormField(
+                                                  controller: e.nodeIdController,
+                                                  hintText: 'NodeId',
+                                                  onChange: (value) {
+                                                    setState(() {
+                                                      e.nodeId = value;
+                                                    });
+                                                  },
+                                                  onPressed: () {
+                                                    setState(() {
+                                                      e.nodeId = '';
+                                                    });
+                                                  })),
+                                        ],
+                                      ),
+                                    );
+                                  }
                             }).toList(),
                           ),
                           SizedBox(
@@ -653,6 +688,7 @@ class _SettingPageState extends State<SettingPage> {
                                         flex: 2,
                                         child: CustomFormField(
                                             controller: e.nameController,
+                                            hintText: 'Name',
                                             onChange: (value) {
                                               setState(() {
                                                 e.name = value;
@@ -670,6 +706,7 @@ class _SettingPageState extends State<SettingPage> {
                                         flex: 3,
                                         child: CustomFormField(
                                             controller: e.nodeIdController,
+                                            hintText: 'NodeId',
                                             onChange: (value) {
                                               setState(() {
                                                 e.nodeId = value;

@@ -40,6 +40,9 @@ class _MonitorPageState extends State<MonitorPage> {
   void _handleTouchStart(
       LongPressStartDetails details, String connectIp, GlobalKey? key) {
     if (key == null) return;
+
+
+
     var size = _getSize(key);
     var width = size.width;
     var height = size.height;
@@ -57,11 +60,22 @@ class _MonitorPageState extends State<MonitorPage> {
     } else {
       action = 'bottom';
     }
-    _postJsonHttp('https://' + connectIp + '.loca.lt/pantilt', {'action': action});
+    bool isProxy = connectIp.contains(":");
+    var url = (isProxy) ? 'http://' + connectIp : 'https://' + connectIp + '.loca.lt';
+
+    _postJsonHttp(url + '/pantilt', {'action': action});
   }
 
   void _handleTouchEnd(LongPressEndDetails details, String connectIp) {
-    _postJsonHttp('https://' + connectIp + '.loca.lt/pantilt', {'action': 'stop'});
+    bool isProxy = connectIp.contains(":");
+    var url = (isProxy) ? 'http://' + connectIp : 'https://' + connectIp + '.loca.lt';
+
+    _postJsonHttp(url + '/pantilt', {'action': 'stop'});
+  }
+
+  Future<void> _onRefresh() {
+    _getUser();
+    return Future<void>.value();
   }
 
   void _getUser() async {
@@ -70,8 +84,99 @@ class _MonitorPageState extends State<MonitorPage> {
     if (userPref != null) {
       var userInfo = jsonDecode(userPref);
       List<Station> projects = [];
+      userInfo['project'].forEach((project) async {
+
+        if (!project['activate']) return;
+        bool isProxy = project['connectIp'].contains(":");
+        _globalKeys[project['stationName']] = GlobalKey();
+        var url = (isProxy) ? 'http://' + project['connectIp'] : 'https://' + project['connectIp'] + '.loca.lt';
+        var res = await http.read(Uri.parse(
+            url + '/settings'));
+        var parsed = json.decode(res);
+        var stationInfo = {
+          'stationName': project['stationName'],
+          'connectIp': project['connectIp'],
+          'stationData': parsed['node'],
+          'isCamera': parsed['camera'],
+          'isRemote': parsed['remote']['active']
+        };
+        var station = Station.fromJson(stationInfo);
+
+        IO.Socket socket = IO.io(
+            url,
+            IO.OptionBuilder()
+                .setTransports(['websocket'])
+                .enableReconnection()
+                .build());
+
+        _sockets.add(socket);
+
+        Map<String, dynamic> value = {};
+
+        if (socket.connected) {
+          setState(() {
+            station.isConnect = true;
+          });
+        }
+
+        socket.onConnect((data) {
+          if (mounted == true) {
+            setState(() {
+              station.isConnect = true;
+            });
+          }
+        });
+
+        socket.onDisconnect((data) {
+          if (mounted == true) {
+            setState(() {
+              station.isConnect = false;
+            });
+          }
+        });
+
+        station.stationInfo
+            .where((stationData) => stationData.activate)
+            .forEach((stationData) async {
+          value[stationData.name] = '';
+
+          bool isProxy = station.connectIp.contains(":");
+          var url = (isProxy) ? 'http://' + station.connectIp : 'https://' + station.connectIp + '.loca.lt';
+          var res = await http.read(Uri.parse(
+              url + '/nodeId/' + stationData.nodeId));
+          var parsed = json.decode(res);
+          setState(() {
+            station.data[stationData.name] = parsed['value'].toString();
+          });
+
+          socket.on(stationData.name, (v) {
+            if (mounted == true) {
+              setState(() {
+                station.data[stationData.name] = v['data'].toString();
+              });
+            }
+          });
+        });
+
+        station.data = value;
+        projects.add(station);
+      });
+
+      setState(() {
+        _projects = projects;
+      });
+    }
+  }
+
+  /*void _getUser() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userPref = prefs.getString('user');
+    if (userPref != null) {
+      var userInfo = jsonDecode(userPref);
+      List<Station> projects = [];
       userInfo['project'].forEach((project) {
         if (!project['activate']) return;
+        print(project);
         bool isProxy = project['connectIp'].contains(":");
         var station = Station.fromJson(project);
         _globalKeys[station.stationName] = GlobalKey();
@@ -138,7 +243,7 @@ class _MonitorPageState extends State<MonitorPage> {
         _projects = projects;
       });
     }
-  }
+  }*/
 
   String _cameraUrl(String connectIp) {
     bool isProxy = connectIp.contains(":");
@@ -150,24 +255,28 @@ class _MonitorPageState extends State<MonitorPage> {
     http.Response response = await http.post(Uri.parse(connectUrl),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(data));
+
     Fluttertoast.showToast(msg: jsonDecode(response.body)['message']);
   }
 
   void _showRemoteSheet(String connectIp) {
+    bool isProxy = connectIp.contains(":");
+    var url = (isProxy) ? 'http://' + connectIp : 'https://' + connectIp + '.loca.lt';
+
     showAdaptiveActionSheet(context: context,
         title: const Text('remote'),
         actions:
     <BottomSheetAction>[
       BottomSheetAction(title: Text('Start'), onPressed: () {
-        _postJsonHttp('https://' + connectIp + '.loca.lt/remote', {'action': 'start'});
+        _postJsonHttp(url + '/remote', {'action': 'start'});
         Navigator.pop(context);
       }),
       BottomSheetAction(title: Text('Reset'), onPressed: () {
-        _postJsonHttp('https://' + connectIp + '.loca.lt/remote', {'action': 'reset'});
+        _postJsonHttp(url + '/remote', {'action': 'reset'});
         Navigator.pop(context);
       }),
       BottomSheetAction(title: Text('Stop'), onPressed: () {
-        _postJsonHttp('https://' + connectIp + '.loca.lt/remote', {'action': 'stop'});
+        _postJsonHttp(url + '/remote', {'action': 'stop'});
         Navigator.pop(context);
       }),
     ]);
@@ -183,6 +292,9 @@ class _MonitorPageState extends State<MonitorPage> {
   }
 
   void _shareKaKao(Station station) async {
+    bool isProxy = station.connectIp.contains(":");
+    var url = (isProxy) ? 'http://' + station.connectIp : 'https://' + station.connectIp + '.loca.lt';
+
     String imgUrl = '';
     try {
       if (station.isCamera) {
@@ -190,7 +302,7 @@ class _MonitorPageState extends State<MonitorPage> {
         Directory tempDir = await getTemporaryDirectory();
         String tempPath = tempDir.path;
         File file = new File('$tempPath' + (rng.nextInt(100).toString() + '.jpg'));
-        http.Response response = await http.get(Uri.parse('https://' + station.connectIp + '.loca.lt/?action=capture'));
+        http.Response response = await http.get(Uri.parse(url + '/?action=capture'));
         await file.writeAsBytes(response.bodyBytes);
         ImageUploadResult imageUploadResult = await LinkClient.instance.uploadImage(image: file);
         imgUrl = imageUploadResult.infos.original.url;
@@ -242,122 +354,125 @@ class _MonitorPageState extends State<MonitorPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: ListView(
-        children: _projects.map<Widget>((station) {
-          return Card(
-            margin: EdgeInsets.only(bottom: 20),
-            elevation: 0.0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(15.0),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        flex: 10,
-                        child: Container(
-                          child: Text(
-                            station.stationName,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+    return RefreshIndicator(
+      onRefresh: _onRefresh,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: ListView(
+          children: _projects.map<Widget>((station) {
+            return Card(
+              margin: EdgeInsets.only(bottom: 20),
+              elevation: 0.0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15.0),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          flex: 10,
+                          child: Container(
+                            child: Text(
+                              station.stationName,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                            ),
                           ),
                         ),
-                      ),
 
-                      Spacer(),
-                      OutlinedButton(
-                        onPressed: () {
-                          _showShareSheet(station);
+                        Spacer(),
+                        OutlinedButton(
+                          onPressed: () {
+                            _showShareSheet(station);
+                          },
+                          child: Text('Share'),
+                          style: OutlinedButton.styleFrom(
+                              primary: primaryBlue,
+                              fixedSize: Size(90, 40),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              side: BorderSide(
+                                  color: primaryBlue
+                              )
+                          ),
+                        ),
+                        SizedBox(width: 10,),
+                        (station.isRemote) ? ElevatedButton(onPressed: () {
+                          _showRemoteSheet(station.connectIp);
+                        }, child: Text('Remote'), style: ElevatedButton.styleFrom(
+                          primary: primaryBlue,
+                          fixedSize: Size(90, 40),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        ) : Container(),
+                      ],
+                    ),
+                    const SizedBox(
+                      height: 20,
+                    ),
+                    (station.isCamera) ? GestureDetector(
+                        onLongPressStart: (LongPressStartDetails details) {
+                          _handleTouchStart(details, station.connectIp,
+                              _globalKeys[station.stationName]);
                         },
-                        child: Text('Share'),
-                        style: OutlinedButton.styleFrom(
-                            primary: primaryBlue,
-                            fixedSize: Size(90, 40),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            side: BorderSide(
-                                color: primaryBlue
-                            )
-                        ),
-                      ),
-                      SizedBox(width: 10,),
-                      (station.isRemote) ? ElevatedButton(onPressed: () {
-                        _showRemoteSheet(station.connectIp);
-                      }, child: Text('Remote'), style: ElevatedButton.styleFrom(
-                        primary: primaryBlue,
-                        fixedSize: Size(90, 40),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      ) : Container(),
-                    ],
-                  ),
-                  const SizedBox(
-                    height: 20,
-                  ),
-                  (station.isCamera) ? GestureDetector(
-                      onLongPressStart: (LongPressStartDetails details) {
-                        _handleTouchStart(details, station.connectIp,
-                            _globalKeys[station.stationName]);
-                      },
-                      onLongPressEnd: (LongPressEndDetails details) {
-                        _handleTouchEnd(details, station.connectIp);
-                      },
-                      key: _globalKeys[station.stationName],
-                      child: Mjpeg(
-                        isLive: true,
-                        stream: _cameraUrl(station.connectIp),
-                        error: (context, error, stack) {
-                          return Container();
+                        onLongPressEnd: (LongPressEndDetails details) {
+                          _handleTouchEnd(details, station.connectIp);
                         },
-                      )) : Container(),
-                  const SizedBox(
-                    height: 20,
-                  ),
-                  Row(
-                    children: [
-                      Text('상태'),
-                      Spacer(),
-                      Text((station.isConnect) ? 'Connect' : 'Disconnect',
-                        style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.w500),)
-                    ],
-                  ),
-                  ListView(
-                    scrollDirection: Axis.vertical,
-                    shrinkWrap: true,
-                    children: station.stationInfo
-                        .where((e) => e.activate)
-                        .map<Widget>((stationData) {
-                      return Padding(
-                        padding: const EdgeInsets.fromLTRB(0, 3.0, 0, 3.0),
-                        child: Row(
-                          children: [
-                            Text(
-                              stationData.name,
-                              style: TextStyle(fontSize: 15.0),
-                            ),
-                            Spacer(),
-                            Text(
-                              station.data[stationData.name],
-                              style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.w500),
-                            )
-                          ],
-                        ),
-                      );
-                    }).toList(),
-                  )
-                ],
+                        key: _globalKeys[station.stationName],
+                        child: Mjpeg(
+                          isLive: true,
+                          stream: _cameraUrl(station.connectIp),
+                          error: (context, error, stack) {
+                            return Container();
+                          },
+                        )) : Container(),
+                    const SizedBox(
+                      height: 20,
+                    ),
+                    Row(
+                      children: [
+                        Text('상태'),
+                        Spacer(),
+                        Text((station.isConnect) ? 'Connect' : 'Disconnect',
+                          style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.w500),)
+                      ],
+                    ),
+                    ListView(
+                      scrollDirection: Axis.vertical,
+                      shrinkWrap: true,
+                      children: station.stationInfo
+                          .where((e) => e.activate)
+                          .map<Widget>((stationData) {
+                        return Padding(
+                          padding: const EdgeInsets.fromLTRB(0, 3.0, 0, 3.0),
+                          child: Row(
+                            children: [
+                              Text(
+                                stationData.name,
+                                style: TextStyle(fontSize: 15.0),
+                              ),
+                              Spacer(),
+                              Text(
+                                station.data[stationData.name],
+                                style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.w500),
+                              )
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    )
+                  ],
+                ),
               ),
-            ),
-          );
-        }).toList(),
+            );
+          }).toList(),
+        ),
       ),
     );
   }

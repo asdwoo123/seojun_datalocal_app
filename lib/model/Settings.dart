@@ -97,17 +97,17 @@ class Save {
 
 class Field {
   String name = '';
-  String type = '';
+  String nodeId = '';
   TextEditingController nameController = TextEditingController();
-  TextEditingController typeController = TextEditingController();
+  TextEditingController nodeIdController = TextEditingController();
 
   Field.fromJson(Map<String, dynamic> json) {
     name = json['name'];
-    type = json['type'];
+    nodeId = json['nodeId'];
   }
 
   Map<String, dynamic> toJson() =>
-      {'name': name, 'type': type};
+      {'name': name, 'nodeId': nodeId};
 }
 
 class Node {

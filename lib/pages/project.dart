@@ -28,6 +28,7 @@ class _ProjectPageState extends State<ProjectPage> {
   bool _create = true;
   String title = '새 프로젝트';
   int _currentIndex = 0;
+  bool _isConnect = false;
   Map<String, dynamic> _userMap = {'project': []};
   final TextEditingController _stationNameController = TextEditingController();
   final TextEditingController _connectIpController = TextEditingController();
@@ -64,6 +65,11 @@ class _ProjectPageState extends State<ProjectPage> {
       Fluttertoast.showToast(
         msg: '이름을 입력해주세요.',
       );
+      return;
+    }
+
+    if (_isConnect == false) {
+      Fluttertoast.showToast(msg: '연결을 확인해주세요.');
       return;
     }
 
@@ -113,20 +119,24 @@ class _ProjectPageState extends State<ProjectPage> {
   }
 
   void _connectStation(StateSetter _setState) async {
-
     bool notDomain = _connectIp.contains(":");
-    var url = (notDomain) ? 'http://' + _connectIp : 'https://' + _connectIp + '.loca.lt';
+    var url = (notDomain)
+        ? 'http://' + _connectIp
+        : 'https://' + _connectIp + '.loca.lt';
 
-    var res = await http.read(Uri.parse(url + '/setting?password=' + _password));
+    var res =
+        await http.read(Uri.parse(url + '/setting?password=' + _password));
     var parsed = json.decode(res);
     if (parsed['success']) {
       _setState(() {
         _stationData = parsed['data'];
         _isCamera = parsed['camera'];
         _isRemote = parsed['remote'];
+        _isConnect = true;
       });
+      Fluttertoast.showToast(msg: '연결이 확인되었습니다.');
     } else {
-      Fluttertoast.showToast(msg: 'Passwords do not match.');
+      Fluttertoast.showToast(msg: '비밀번호를 확인해주세요.');
     }
   }
 
@@ -256,11 +266,11 @@ class _ProjectPageState extends State<ProjectPage> {
                                 borderRadius: BorderRadius.circular(12)),
                           ),
                           child: Text(
-                            'Connect',
+                            'Connect check',
                             style: TextStyle(fontSize: 16),
                           )),
                     ),
-                    const SizedBox(
+                    /*const SizedBox(
                       height: 20,
                     ),
                     Container(
@@ -286,7 +296,7 @@ class _ProjectPageState extends State<ProjectPage> {
                           );
                         }).toList(),
                       ),
-                    )
+                    )*/
                   ],
                 ),
               ),
@@ -331,6 +341,7 @@ class _ProjectPageState extends State<ProjectPage> {
                   onPressed: () {
                     setState(() {
                       _create = true;
+                      _isConnect = false;
                     });
                     _showFullDialog();
                   },

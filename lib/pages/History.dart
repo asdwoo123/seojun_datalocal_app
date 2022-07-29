@@ -41,6 +41,7 @@ class _HistoryPageState extends State<HistoryPage> {
         var station = Station.fromJson(project);
         projects.add(station);
       });
+
       setState(() {
         _projects = projects;
       });
@@ -171,7 +172,7 @@ class _HistoryPageState extends State<HistoryPage> {
               children: [
                 Row(
                   children: [
-                    /*Expanded(
+                    Expanded(
                       child: Container(
                         decoration: BoxDecoration(
                             color: Colors.white,
@@ -205,7 +206,7 @@ class _HistoryPageState extends State<HistoryPage> {
                           ),
                         ),
                       ),
-                    ),*/
+                    ),
                     SizedBox(
                       width: 10,
                     ),
