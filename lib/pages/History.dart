@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:seojun_datalocal_app/theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:seojun_datalocal_app/service/index.dart';
 
 import '../model/Station.dart';
 
@@ -53,8 +54,7 @@ class _HistoryPageState extends State<HistoryPage> {
       var station = _projects[_stationIndex];
       var start_period = _dateTimeRange.start;
       var end_period = _dateTimeRange.end;
-      bool isProxy = station.connectIp.contains(":");
-      var url = (isProxy) ? 'http://' + station.connectIp : 'https://' + station.connectIp + '.loca.lt';
+      var url = stationUrl(station.connectIp);
       var res = await http.read(Uri.parse(url +
           '/data?page=' +
           _page.toString() +
@@ -180,29 +180,27 @@ class _HistoryPageState extends State<HistoryPage> {
                         child: Padding(
                           padding:
                               const EdgeInsets.only(left: 12, right: 12),
-                          child: Flexible(
-                            child: DropdownButton(
-                              isExpanded: true,
-                              value: _projects[_stationIndex].stationName,
-                              items: _projects.map((station) {
-                                return DropdownMenuItem(
-                                    value: station.stationName,
-                                    child: Text(station.stationName,
-                                      overflow: TextOverflow.ellipsis,
-                                    )
-                                );
-                              }).toList(),
-                              onChanged: (Object? value) {
-                                var index = _projects.indexOf(_projects
-                                    .where((station) =>
-                                        station.stationName == value)
-                                    .toList()[0]);
-                                setState(() {
-                                  _stationIndex = index;
-                                });
-                              },
-                              underline: SizedBox(),
-                            ),
+                          child: DropdownButton(
+                            isExpanded: true,
+                            value: _projects[_stationIndex].stationName,
+                            items: _projects.map((station) {
+                              return DropdownMenuItem(
+                                  value: station.stationName,
+                                  child: Text(station.stationName,
+                                    overflow: TextOverflow.ellipsis,
+                                  )
+                              );
+                            }).toList(),
+                            onChanged: (Object? value) {
+                              var index = _projects.indexOf(_projects
+                                  .where((station) =>
+                                      station.stationName == value)
+                                  .toList()[0]);
+                              setState(() {
+                                _stationIndex = index;
+                              });
+                            },
+                            underline: SizedBox(),
                           ),
                         ),
                       ),

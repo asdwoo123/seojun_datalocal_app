@@ -13,6 +13,7 @@ import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:flutter_mjpeg/flutter_mjpeg.dart';
 import 'package:http/http.dart' as http;
 import 'package:adaptive_action_sheet/adaptive_action_sheet.dart';
+import 'package:seojun_datalocal_app/service/index.dart';
 
 import '../model/Station.dart';
 
@@ -60,17 +61,13 @@ class _MonitorPageState extends State<MonitorPage> {
     } else {
       action = 'bottom';
     }
-    bool isProxy = connectIp.contains(":");
-    var url = (isProxy) ? 'http://' + connectIp : 'https://' + connectIp + '.loca.lt';
 
-    _postJsonHttp(url + '/pantilt', {'action': action});
+    _postJsonHttp(stationUrl(connectIp) + '/pantilt', {'action': action});
   }
 
   void _handleTouchEnd(LongPressEndDetails details, String connectIp) {
-    bool isProxy = connectIp.contains(":");
-    var url = (isProxy) ? 'http://' + connectIp : 'https://' + connectIp + '.loca.lt';
 
-    _postJsonHttp(url + '/pantilt', {'action': 'stop'});
+    _postJsonHttp(stationUrl(connectIp) + '/pantilt', {'action': 'stop'});
   }
 
   Future<void> _onRefresh() {
@@ -87,11 +84,9 @@ class _MonitorPageState extends State<MonitorPage> {
       userInfo['project'].forEach((project) async {
 
         if (!project['activate']) return;
-        bool isProxy = project['connectIp'].contains(":");
         _globalKeys[project['stationName']] = GlobalKey();
-        var url = (isProxy) ? 'http://' + project['connectIp'] : 'https://' + project['connectIp'] + '.loca.lt';
         var res = await http.read(Uri.parse(
-            url + '/settings'));
+            stationUrl(project['connectIp']) + '/settings'));
         var parsed = json.decode(res);
         var stationInfo = {
           'stationName': project['stationName'],
@@ -103,7 +98,7 @@ class _MonitorPageState extends State<MonitorPage> {
         var station = Station.fromJson(stationInfo);
 
         IO.Socket socket = IO.io(
-            url,
+            stationUrl(project['connectIp']),
             IO.OptionBuilder()
                 .setTransports(['websocket'])
                 .enableReconnection()
@@ -140,10 +135,8 @@ class _MonitorPageState extends State<MonitorPage> {
             .forEach((stationData) async {
           value[stationData.name] = '';
 
-          bool isProxy = station.connectIp.contains(":");
-          var url = (isProxy) ? 'http://' + station.connectIp : 'https://' + station.connectIp + '.loca.lt';
           var res = await http.read(Uri.parse(
-              url + '/nodeId/' + stationData.nodeId));
+              stationUrl(station.connectIp) + '/nodeId/' + stationData.nodeId));
           var parsed = json.decode(res);
           setState(() {
             station.data[stationData.name] = parsed['value'].toString();
@@ -246,9 +239,7 @@ class _MonitorPageState extends State<MonitorPage> {
   }*/
 
   String _cameraUrl(String connectIp) {
-    bool isProxy = connectIp.contains(":");
-    var url = (isProxy) ? 'http://' + connectIp : 'https://' + connectIp + '.loca.lt';
-    return url + '?action=stream';
+    return stationUrl(connectIp) + '?action=stream';
   }
 
   void _postJsonHttp(String connectUrl, Map<String, dynamic> data) async {
@@ -260,8 +251,7 @@ class _MonitorPageState extends State<MonitorPage> {
   }
 
   void _showRemoteSheet(String connectIp) {
-    bool isProxy = connectIp.contains(":");
-    var url = (isProxy) ? 'http://' + connectIp : 'https://' + connectIp + '.loca.lt';
+    var url = stationUrl(connectIp);
 
     showAdaptiveActionSheet(context: context,
         title: const Text('remote'),
@@ -292,8 +282,7 @@ class _MonitorPageState extends State<MonitorPage> {
   }
 
   void _shareKaKao(Station station) async {
-    bool isProxy = station.connectIp.contains(":");
-    var url = (isProxy) ? 'http://' + station.connectIp : 'https://' + station.connectIp + '.loca.lt';
+    var url = stationUrl(station.connectIp);
 
     String imgUrl = '';
     try {

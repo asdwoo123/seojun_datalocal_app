@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
 import 'package:seojun_datalocal_app/model/Settings.dart';
-import 'package:seojun_datalocal_app/pages/manual.dart';
+import 'package:seojun_datalocal_app/service/index.dart';
 
 import '../components/Custom_FormField.dart';
 import '../components/Custom_label.dart';
@@ -26,8 +26,7 @@ class _SettingPageState extends State<SettingPage> {
   final TextEditingController _passwordController = TextEditingController();
 
   void _connectSettings() async {
-    bool notDomain = _connectIp.contains(":");
-    var url = (notDomain) ? 'http://' + _connectIp + '/settings' : 'https://' + _connectIp + '.loca.lt/settings';
+    var url = stationUrl(_connectIp);
     var res = await http.read(Uri.parse(url));
     var parsed = json.decode(res);
     setState(() {
@@ -62,8 +61,7 @@ class _SettingPageState extends State<SettingPage> {
       var length = _settingsData!.pantilt.length;
     }
 
-    bool notDomain = _connectIp.contains(":");
-    var url = (notDomain) ? 'http://' + _connectIp + '/settings' : 'https://' + _connectIp + '.loca.lt/settings';
+    var url = stationUrl(_connectIp);
 
     http.Response res = await http.post(
         Uri.parse(url),

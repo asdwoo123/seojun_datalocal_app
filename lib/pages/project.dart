@@ -10,6 +10,8 @@ import 'package:seojun_datalocal_app/components/Custom_label.dart';
 import 'package:seojun_datalocal_app/model/Settings.dart';
 import 'package:seojun_datalocal_app/theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:seojun_datalocal_app/service/index.dart';
+
 
 class ProjectPage extends StatefulWidget {
   const ProjectPage({Key? key}) : super(key: key);
@@ -119,10 +121,7 @@ class _ProjectPageState extends State<ProjectPage> {
   }
 
   void _connectStation(StateSetter _setState) async {
-    bool notDomain = _connectIp.contains(":");
-    var url = (notDomain)
-        ? 'http://' + _connectIp
-        : 'https://' + _connectIp + '.loca.lt';
+    var url = stationUrl(_connectIp);
 
     var res =
         await http.read(Uri.parse(url + '/setting?password=' + _password));
