@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
@@ -7,6 +8,7 @@ import 'package:flutter/painting.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:seojun_datalocal_app/service/socketsPoket.dart';
 import 'package:seojun_datalocal_app/theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
@@ -14,6 +16,7 @@ import 'package:flutter_mjpeg/flutter_mjpeg.dart';
 import 'package:http/http.dart' as http;
 import 'package:adaptive_action_sheet/adaptive_action_sheet.dart';
 import 'package:seojun_datalocal_app/service/index.dart';
+import 'package:seojun_datalocal_app/service/socketsPoket.dart';
 
 import '../model/Station.dart';
 
@@ -26,13 +29,12 @@ class MonitorPage extends StatefulWidget {
 
 class _MonitorPageState extends State<MonitorPage> {
   List<Station> _projects = [];
-  List<IO.Socket> _sockets = [];
   Map<String, GlobalKey> _globalKeys = {};
 
   _getSize(GlobalKey key) {
     if (key.currentContext != null) {
       final RenderBox renderBox =
-      key.currentContext!.findRenderObject() as RenderBox;
+          key.currentContext!.findRenderObject() as RenderBox;
       Size size = renderBox.size;
       return size;
     }
@@ -41,8 +43,6 @@ class _MonitorPageState extends State<MonitorPage> {
   void _handleTouchStart(
       LongPressStartDetails details, String connectIp, GlobalKey? key) {
     if (key == null) return;
-
-
 
     var size = _getSize(key);
     var width = size.width;
@@ -62,12 +62,11 @@ class _MonitorPageState extends State<MonitorPage> {
       action = 'bottom';
     }
 
-    _postJsonHttp(stationUrl(connectIp) + '/pantilt', {'action': action});
+    _postJsonHttp(stationUrl(connectIp, '/pantilt'), {'action': action});
   }
 
   void _handleTouchEnd(LongPressEndDetails details, String connectIp) {
-
-    _postJsonHttp(stationUrl(connectIp) + '/pantilt', {'action': 'stop'});
+    _postJsonHttp(stationUrl(connectIp, '/pantilt'), {'action': 'stop'});
   }
 
   Future<void> _onRefresh() {
@@ -79,39 +78,56 @@ class _MonitorPageState extends State<MonitorPage> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? userPref = prefs.getString('user');
     if (userPref != null) {
+      var socketsPoket = SocketsPoket();
+      var sockets = socketsPoket.sockets;
+
+      sockets.forEach((IO.Socket socket) {
+        socket.disconnect();
+      });
+
+      sockets.clear();
+
       var userInfo = jsonDecode(userPref);
       List<Station> projects = [];
       userInfo['project'].forEach((project) async {
-
         if (!project['activate']) return;
         _globalKeys[project['stationName']] = GlobalKey();
-        var res = await http.read(Uri.parse(
-            stationUrl(project['connectIp']) + '/settings'));
-        var parsed = json.decode(res);
         var stationInfo = {
           'stationName': project['stationName'],
           'connectIp': project['connectIp'],
-          'stationData': parsed['node'],
-          'isCamera': parsed['camera'],
-          'isRemote': parsed['remote']['active']
+          'isCamera': false,
+          'isRemote': false
         };
         var station = Station.fromJson(stationInfo);
 
+        projects.add(station);
+        setState(() {
+          _projects = projects;
+        });
+
         IO.Socket socket = IO.io(
-            stationUrl(project['connectIp']),
+            stationUrl(project['connectIp'], ''),
             IO.OptionBuilder()
                 .setTransports(['websocket'])
+                /*.disableAutoConnect()*/
                 .enableReconnection()
                 .build());
 
-        _sockets.add(socket);
 
-        Map<String, dynamic> value = {};
-
+        sockets.add(socket);
         if (socket.connected) {
+          socket.emit('on', '');
           setState(() {
             station.isConnect = true;
           });
+        } else {
+          socket.connect();
+          if (socket.connected) {
+            socket.emit('on', '');
+            setState(() {
+              station.isConnect = true;
+            });
+          }
         }
 
         socket.onConnect((data) {
@@ -130,197 +146,122 @@ class _MonitorPageState extends State<MonitorPage> {
           }
         });
 
-        station.stationInfo
-            .where((stationData) => stationData.activate)
-            .forEach((stationData) async {
-          value[stationData.name] = '';
-
-          var res = await http.read(Uri.parse(
-              stationUrl(station.connectIp) + '/nodeId/' + stationData.nodeId));
-          var parsed = json.decode(res);
-          setState(() {
-            station.data[stationData.name] = parsed['value'].toString();
-          });
-
-          socket.on(stationData.name, (v) {
-            if (mounted == true) {
-              setState(() {
-                station.data[stationData.name] = v['data'].toString();
-              });
-            }
-          });
+        socket.on('setting', (v) {
+          if (mounted == true) {
+            setState(() {
+              station.isCamera = v['camera'];
+              station.isRemote = v['remote']['active'];
+              station.stationInfo = Station.fromInfo(v['node']);
+            });
+          }
         });
 
-        station.data = value;
-        projects.add(station);
-      });
+        socket.on('data', (v) {
+          if (mounted == true) {
+            setState(() {
+              station.data[v['name']] = v['value'].toString();
+            });
+          }
+        });
 
-      setState(() {
-        _projects = projects;
       });
     }
   }
 
-  /*void _getUser() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? userPref = prefs.getString('user');
-    if (userPref != null) {
-      var userInfo = jsonDecode(userPref);
-      List<Station> projects = [];
-      userInfo['project'].forEach((project) {
-        if (!project['activate']) return;
-        print(project);
-        bool isProxy = project['connectIp'].contains(":");
-        var station = Station.fromJson(project);
-        _globalKeys[station.stationName] = GlobalKey();
-        var url = (isProxy) ? 'http://' + station.connectIp : 'https://' + station.connectIp + '.loca.lt';
-        IO.Socket socket = IO.io(
-            url,
-            IO.OptionBuilder()
-                .setTransports(['websocket'])
-                .enableReconnection()
-                .build());
-
-        _sockets.add(socket);
-
-        Map<String, dynamic> value = {};
-
-        if (socket.connected) {
-          setState(() {
-            station.isConnect = true;
-          });
-        }
-
-        socket.onConnect((data) {
-          if (mounted == true) {
-            setState(() {
-              station.isConnect = true;
-            });
-          }
-        });
-
-        socket.onDisconnect((data) {
-          if (mounted == true) {
-            setState(() {
-              station.isConnect = false;
-            });
-          }
-        });
-        station.stationInfo
-            .where((stationData) => stationData.activate)
-            .forEach((stationData) async {
-          value[stationData.name] = '';
-
-          bool isProxy = station.connectIp.contains(":");
-          var url = (isProxy) ? 'http://' + station.connectIp : 'https://' + station.connectIp + '.loca.lt';
-          var res = await http.read(Uri.parse(
-              url + '/nodeId/' + stationData.nodeId));
-          var parsed = json.decode(res);
-          setState(() {
-            station.data[stationData.name] = parsed['value'].toString();
-          });
-
-          socket.on(stationData.name, (v) {
-            if (mounted == true) {
-              setState(() {
-                station.data[stationData.name] = v['data'].toString();
-              });
-            }
-          });
-        });
-
-        station.data = value;
-        projects.add(station);
-      });
-      setState(() {
-        _projects = projects;
-      });
-    }
-  }*/
-
   String _cameraUrl(String connectIp) {
-    return stationUrl(connectIp) + '?action=stream';
+    return stationUrl(connectIp, '/stream');
   }
 
   void _postJsonHttp(String connectUrl, Map<String, dynamic> data) async {
     http.Response response = await http.post(Uri.parse(connectUrl),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(data));
+        headers: {'Content-Type': 'application/json'}, body: jsonEncode(data));
 
     Fluttertoast.showToast(msg: jsonDecode(response.body)['message']);
   }
 
   void _showRemoteSheet(String connectIp) {
-    var url = stationUrl(connectIp);
+    var url = stationUrl(connectIp, '/remote');
 
-    showAdaptiveActionSheet(context: context,
+    showAdaptiveActionSheet(
+        context: context,
         title: const Text('remote'),
-        actions:
-    <BottomSheetAction>[
-      BottomSheetAction(title: Text('Start'), onPressed: () {
-        _postJsonHttp(url + '/remote', {'action': 'start'});
-        Navigator.pop(context);
-      }),
-      BottomSheetAction(title: Text('Reset'), onPressed: () {
-        _postJsonHttp(url + '/remote', {'action': 'reset'});
-        Navigator.pop(context);
-      }),
-      BottomSheetAction(title: Text('Stop'), onPressed: () {
-        _postJsonHttp(url + '/remote', {'action': 'stop'});
-        Navigator.pop(context);
-      }),
-    ]);
+        actions: <BottomSheetAction>[
+          BottomSheetAction(
+              title: Text('Start'),
+              onPressed: () {
+                _postJsonHttp(url, {'action': 'start'});
+                Navigator.pop(context);
+              }),
+          BottomSheetAction(
+              title: Text('Reset'),
+              onPressed: () {
+                _postJsonHttp(url, {'action': 'reset'});
+                Navigator.pop(context);
+              }),
+          BottomSheetAction(
+              title: Text('Stop'),
+              onPressed: () {
+                _postJsonHttp(url, {'action': 'stop'});
+                Navigator.pop(context);
+              }),
+          BottomSheetAction(
+              title: Text('Light'),
+              onPressed: () {
+                _postJsonHttp(url, {'action': 'light'});
+                Navigator.pop(context);
+              }),
+        ]);
   }
 
   void _showShareSheet(Station station) {
-    showAdaptiveActionSheet(context: context, title: const Text('share'),
-    actions: <BottomSheetAction>[
-      BottomSheetAction(title: Text('Kakao talk'), onPressed: () {
-        _shareKaKao(station);
-      })
-    ]);
+    showAdaptiveActionSheet(
+        context: context,
+        title: const Text('share'),
+        actions: <BottomSheetAction>[
+          BottomSheetAction(
+              title: Text('Kakao talk'),
+              onPressed: () {
+                _shareKaKao(station);
+              })
+        ]);
   }
 
   void _shareKaKao(Station station) async {
-    var url = stationUrl(station.connectIp);
-
     String imgUrl = '';
     try {
       if (station.isCamera) {
         var rng = new Random();
         Directory tempDir = await getTemporaryDirectory();
         String tempPath = tempDir.path;
-        File file = new File('$tempPath' + (rng.nextInt(100).toString() + '.jpg'));
-        http.Response response = await http.get(Uri.parse(url + '/?action=capture'));
+        File file =
+            new File('$tempPath' + (rng.nextInt(100).toString() + '.jpg'));
+        http.Response response =
+            await http.get(Uri.parse(stationUrl(station.connectIp, '/capture')));
         await file.writeAsBytes(response.bodyBytes);
-        ImageUploadResult imageUploadResult = await LinkClient.instance.uploadImage(image: file);
+        ImageUploadResult imageUploadResult =
+            await LinkClient.instance.uploadImage(image: file);
         imgUrl = imageUploadResult.infos.original.url;
       }
 
-      FeedTemplate defaultFeed = FeedTemplate(content: Content(
-          title: station.stationName,
-          imageUrl: Uri.parse(
-              imgUrl
-          ),
-          link: Link(
-              webUrl: Uri.parse(''),
-              mobileWebUrl: Uri.parse('')
-          )
-      ),
+      FeedTemplate defaultFeed = FeedTemplate(
+          content: Content(
+              title: station.stationName,
+              imageUrl: Uri.parse(imgUrl),
+              link: Link(webUrl: Uri.parse(''), mobileWebUrl: Uri.parse(''))),
           itemContent: ItemContent(
-              items: station.stationInfo
-                  .where((e) => e.activate)
-                  .map<ItemInfo>((stationData) {
-                return ItemInfo(item: stationData.name, itemOp: station.data[stationData.name]);
-              }).toList()
-          ));
+              items: station.stationInfo.map<ItemInfo>((stationData) {
+            return ItemInfo(
+                item: stationData.name, itemOp: station.data[stationData.name]);
+          }).toList()));
 
       var isKaKao = await LinkClient.instance.isKakaoLinkAvailable();
       if (isKaKao) {
-        Uri shareUrl = await LinkClient.instance.defaultTemplate(template: defaultFeed);
+        Uri shareUrl =
+            await LinkClient.instance.defaultTemplate(template: defaultFeed);
         await LinkClient.instance.launchKakaoTalk(shareUrl);
       } else {
-        Uri shareUrl = await WebSharerClient.instance.defaultTemplateUri(template: defaultFeed);
+        Uri shareUrl = await WebSharerClient.instance
+            .defaultTemplateUri(template: defaultFeed);
         await launchBrowserTab(shareUrl);
       }
     } catch (e) {
@@ -328,17 +269,10 @@ class _MonitorPageState extends State<MonitorPage> {
     }
   }
 
-
   @override
   void initState() {
     _getUser();
     super.initState();
-  }
-
-  @override
-  void dispose() {
-    /*_sockets.forEach((socket) => socket.disconnect());*/
-    super.dispose();
   }
 
   @override
@@ -367,11 +301,11 @@ class _MonitorPageState extends State<MonitorPage> {
                             child: Text(
                               station.stationName,
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                  fontSize: 18, fontWeight: FontWeight.bold),
                             ),
                           ),
                         ),
-
                         Spacer(),
                         OutlinedButton(
                           onPressed: () {
@@ -384,43 +318,49 @@ class _MonitorPageState extends State<MonitorPage> {
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              side: BorderSide(
-                                  color: primaryBlue
+                              side: BorderSide(color: primaryBlue)),
+                        ),
+                        SizedBox(
+                          width: 10,
+                        ),
+                        (station.isRemote)
+                            ? ElevatedButton(
+                                onPressed: () {
+                                  _showRemoteSheet(station.connectIp);
+                                },
+                                child: Text('Remote'),
+                                style: ElevatedButton.styleFrom(
+                                  primary: primaryBlue,
+                                  fixedSize: Size(90, 40),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
                               )
-                          ),
-                        ),
-                        SizedBox(width: 10,),
-                        (station.isRemote) ? ElevatedButton(onPressed: () {
-                          _showRemoteSheet(station.connectIp);
-                        }, child: Text('Remote'), style: ElevatedButton.styleFrom(
-                          primary: primaryBlue,
-                          fixedSize: Size(90, 40),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        ) : Container(),
+                            : Container(),
                       ],
                     ),
                     const SizedBox(
                       height: 20,
                     ),
-                    (station.isCamera) ? GestureDetector(
-                        onLongPressStart: (LongPressStartDetails details) {
-                          _handleTouchStart(details, station.connectIp,
-                              _globalKeys[station.stationName]);
-                        },
-                        onLongPressEnd: (LongPressEndDetails details) {
-                          _handleTouchEnd(details, station.connectIp);
-                        },
-                        key: _globalKeys[station.stationName],
-                        child: Mjpeg(
-                          isLive: true,
-                          stream: _cameraUrl(station.connectIp),
-                          error: (context, error, stack) {
-                            return Container();
-                          },
-                        )) : Container(),
+                    (station.isCamera)
+                        ? GestureDetector(
+                            onLongPressStart: (LongPressStartDetails details) {
+                              _handleTouchStart(details, station.connectIp,
+                                  _globalKeys[station.stationName]);
+                            },
+                            onLongPressEnd: (LongPressEndDetails details) {
+                              _handleTouchEnd(details, station.connectIp);
+                            },
+                            key: _globalKeys[station.stationName],
+                            child: Mjpeg(
+                              isLive: true,
+                              stream: _cameraUrl(station.connectIp),
+                              error: (context, error, stack) {
+                                return Container();
+                              },
+                            ))
+                        : Container(),
                     const SizedBox(
                       height: 20,
                     ),
@@ -428,16 +368,18 @@ class _MonitorPageState extends State<MonitorPage> {
                       children: [
                         Text('상태'),
                         Spacer(),
-                        Text((station.isConnect) ? 'Connect' : 'Disconnect',
-                          style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.w500),)
+                        Text(
+                          (station.isConnect) ? 'Connect' : 'Disconnect',
+                          style: TextStyle(
+                              fontSize: 15.0, fontWeight: FontWeight.w500),
+                        )
                       ],
                     ),
                     ListView(
                       scrollDirection: Axis.vertical,
+                      physics: NeverScrollableScrollPhysics(),
                       shrinkWrap: true,
-                      children: station.stationInfo
-                          .where((e) => e.activate)
-                          .map<Widget>((stationData) {
+                      children: station.stationInfo.map<Widget>((stationData) {
                         return Padding(
                           padding: const EdgeInsets.fromLTRB(0, 3.0, 0, 3.0),
                           child: Row(
@@ -448,8 +390,10 @@ class _MonitorPageState extends State<MonitorPage> {
                               ),
                               Spacer(),
                               Text(
-                                station.data[stationData.name],
-                                style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.w500),
+                                station.data[stationData.name] ?? '',
+                                style: TextStyle(
+                                    fontSize: 15.0,
+                                    fontWeight: FontWeight.w500),
                               )
                             ],
                           ),

@@ -121,10 +121,10 @@ class _ProjectPageState extends State<ProjectPage> {
   }
 
   void _connectStation(StateSetter _setState) async {
-    var url = stationUrl(_connectIp);
-
+    var url = (_connectIp.contains(':')) ? 'http://' + _connectIp + '/setting?password=' + _password : 'http://seojun.ddns.net/setting?password=' + _password + '&id=' + _connectIp;
+    print(url);
     var res =
-        await http.read(Uri.parse(url + '/setting?password=' + _password));
+        await http.read(Uri.parse(url));
     var parsed = json.decode(res);
     if (parsed['success']) {
       _setState(() {

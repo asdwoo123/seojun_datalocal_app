@@ -1,6 +1,10 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
 import 'package:seojun_datalocal_app/pages/home.dart';
+import 'dart:io';
 
 void main() {
   KakaoSdk.init(nativeAppKey: 'dabb5cf4b1f352d4186215896255d9fc');
@@ -56,6 +60,8 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
+  bool _isConnect = false;
+  late Socket _socket;
 
   void _incrementCounter() {
     setState(() {
@@ -66,6 +72,22 @@ class _MyHomePageState extends State<MyHomePage> {
       // called again, and so nothing would appear to happen.
       _counter++;
     });
+  }
+
+  void _connectSocket() async {
+    _socket = await Socket.connect('192.168.0.178', 4000);
+    _socket.encoding = utf8;
+    _socket.listen((Uint8List data) {
+      var res = jsonDecode(utf8.decode(data));
+      print(res);
+      _socket.write('on');
+    });
+  }
+
+  void _disconnectSocket() {
+    if (_socket != null) {
+      _socket.close();
+    }
   }
 
   @override
@@ -102,13 +124,17 @@ class _MyHomePageState extends State<MyHomePage> {
           // horizontal).
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            const Text(
+            /*const Text(
               'You have pushed the button this many times:',
             ),
             Text(
               '$_counter',
               style: Theme.of(context).textTheme.headline4,
-            ),
+            ),*/
+            ElevatedButton(onPressed: _connectSocket, child: Text('connect')),
+            ElevatedButton(onPressed: _disconnectSocket, child: Text('disconnect')),
+            SizedBox(height: 20,),
+            Text((_isConnect) ? 'connect!' : 'disconnect')
           ],
         ),
       ),

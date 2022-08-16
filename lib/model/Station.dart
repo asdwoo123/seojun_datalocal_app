@@ -5,8 +5,8 @@ class Station {
   bool isConnect = false;
   bool isCamera = true;
   bool isRemote = true;
-  late List<StationData> stationInfo;
-  late Map<String, dynamic> data;
+  late List<StationData> stationInfo = [];
+  late Map<String, dynamic> data = {};
 
   Station.fromJson(Map<String, dynamic> json) {
     stationName = json['stationName'];
@@ -19,6 +19,15 @@ class Station {
         stationInfo.add(StationData.fromJson(v));
       });
     }
+  }
+
+  static List<StationData> fromInfo(List node) {
+    List<StationData> si = [];
+    node.forEach((v) {
+      si.add(StationData.fromJson(v));
+    });
+
+    return si;
   }
 }
 
@@ -34,9 +43,5 @@ class StationData {
   }
 
   Map<String, dynamic> toJson() =>
-      {
-        'name': name,
-        'nodeId': nodeId,
-        'actiavte': activate
-      };
+      {'name': name, 'nodeId': nodeId, 'actiavte': activate};
 }

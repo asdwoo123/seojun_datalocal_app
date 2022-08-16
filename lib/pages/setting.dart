@@ -26,11 +26,14 @@ class _SettingPageState extends State<SettingPage> {
   final TextEditingController _passwordController = TextEditingController();
 
   void _connectSettings() async {
-    var url = stationUrl(_connectIp);
+    var url = (_connectIp.contains(':')) ? 'http://' + _connectIp + '/settings?password=' + _password : 'http://seojun.ddns.net/settings?password=' + _password + '&id=' + _connectIp;
     var res = await http.read(Uri.parse(url));
     var parsed = json.decode(res);
+    if (!parsed['success']) {
+      return;
+    }
     setState(() {
-      _settingsData = Settings.fromJson(parsed);
+      _settingsData = Settings.fromJson(parsed['setting']);
       _settingsData?.domainController.text = _settingsData!.domain;
       _settingsData?.endpointController.text = _settingsData!.endpoint;
       _settingsData?.portController.text = _settingsData!.port.toString();
@@ -45,6 +48,7 @@ class _SettingPageState extends State<SettingPage> {
       _settingsData?.remote.startController.text = _settingsData!.remote.start;
       _settingsData?.remote.resetController.text = _settingsData!.remote.reset;
       _settingsData?.remote.stopController.text = _settingsData!.remote.stop;
+      _settingsData?.remote.lightController.text = _settingsData!.remote.light;
       _settingsData?.save.tableController.text = _settingsData!.save.table;
       _settingsData?.save.completeController.text =
           _settingsData!.save.complete;
@@ -61,7 +65,7 @@ class _SettingPageState extends State<SettingPage> {
       var length = _settingsData!.pantilt.length;
     }
 
-    var url = stationUrl(_connectIp);
+    var url = stationUrl(_connectIp, '/settings');
 
     http.Response res = await http.post(
         Uri.parse(url),
@@ -434,6 +438,29 @@ class _SettingPageState extends State<SettingPage> {
                                       onPressed: () {
                                         setState(() {
                                           _settingsData!.remote.stop = '';
+                                        });
+                                      }))
+                            ],
+                          ),
+                          SizedBox(
+                            height: 10,
+                          ),
+                          Row(
+                            children: <Widget>[
+                              Expanded(child: Text('light')),
+                              Expanded(
+                                  flex: 2,
+                                  child: CustomFormField(
+                                      controller:
+                                      _settingsData!.remote.lightController,
+                                      onChange: (value) {
+                                        setState(() {
+                                          _settingsData!.remote.light = value;
+                                        });
+                                      },
+                                      onPressed: () {
+                                        setState(() {
+                                          _settingsData!.remote.light = '';
                                         });
                                       }))
                             ],

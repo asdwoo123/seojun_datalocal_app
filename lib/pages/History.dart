@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:custom_date_range_picker/custom_date_range_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
@@ -24,6 +25,8 @@ class _HistoryPageState extends State<HistoryPage> {
   bool _pageEnd = false;
   String _barcode = '';
   bool _isLoading = false;
+  DateTime? startDate;
+  DateTime? endDate;
   List<DataRow> _rows = [];
   List<DataColumn> _columns = [];
   final ScrollController _scrollController = ScrollController();
@@ -54,16 +57,16 @@ class _HistoryPageState extends State<HistoryPage> {
       var station = _projects[_stationIndex];
       var start_period = _dateTimeRange.start;
       var end_period = _dateTimeRange.end;
-      var url = stationUrl(station.connectIp);
-      var res = await http.read(Uri.parse(url +
-          '/data?page=' +
+      var searchQuery = '/data?page=' +
           _page.toString() +
           '&barcode=' +
           _barcode +
           '&start_period=' +
-          start_period.toIso8601String() +
+          startDate.toString() +
           '&end_period=' +
-          end_period.toIso8601String()));
+          endDate.toString();
+      var url = (station.connectIp.contains(':')) ? stationUrl(station.connectIp, searchQuery) : 'http://seojun.ddns.net' + searchQuery + '&id=' + station.connectIp;
+      var res = await http.read(Uri.parse(url));
       if (res == '[]') {
         setState(() {
           _pageEnd = true;
@@ -178,23 +181,22 @@ class _HistoryPageState extends State<HistoryPage> {
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(10)),
                         child: Padding(
-                          padding:
-                              const EdgeInsets.only(left: 12, right: 12),
+                          padding: const EdgeInsets.only(left: 12, right: 12),
                           child: DropdownButton(
                             isExpanded: true,
                             value: _projects[_stationIndex].stationName,
                             items: _projects.map((station) {
                               return DropdownMenuItem(
                                   value: station.stationName,
-                                  child: Text(station.stationName,
+                                  child: Text(
+                                    station.stationName,
                                     overflow: TextOverflow.ellipsis,
-                                  )
-                              );
+                                  ));
                             }).toList(),
                             onChanged: (Object? value) {
                               var index = _projects.indexOf(_projects
-                                  .where((station) =>
-                                      station.stationName == value)
+                                  .where(
+                                      (station) => station.stationName == value)
                                   .toList()[0]);
                               setState(() {
                                 _stationIndex = index;
@@ -239,6 +241,48 @@ class _HistoryPageState extends State<HistoryPage> {
                       ),
                     ),
                     SizedBox(
+                      width: 15,
+                    )
+                  ],
+                ),
+                SizedBox(height: 12,),
+                Row(
+                  children: <Widget>[
+                    Expanded(child:
+                    Row(
+                        children: <Widget>[
+                          Expanded(
+                            child: Text(
+                                '${startDate != null ? DateFormat("MM - dd").format(startDate!) : '-'}   /   ${endDate != null ? DateFormat("MM - dd").format(endDate!) : '-'}',
+                              style: TextStyle(fontSize: 16),
+                            ),
+                          ),
+                          ElevatedButton(
+                              onPressed: () {
+                                showCustomDateRangePicker(context,
+                                    dismissible: true,
+                                    minimumDate: DateTime.now()
+                                        .subtract(const Duration(days: 365)),
+                                    maximumDate: DateTime.now(),
+                                    endDate: endDate,
+                                    startDate: startDate,
+                                    onApplyClick: (start, end) {
+                                      setState(() {
+                                        endDate = end;
+                                        startDate = start;
+                                      });
+                                    }, onCancelClick: () {
+                                      setState(() {
+                                        endDate = null;
+                                        startDate = null;
+                                      });
+                                    });
+                              },
+                              child: Text('Choose Date')),
+                        ],
+                      ),
+                    ),
+                    SizedBox(
                       width: 10,
                     ),
                     SizedBox(
@@ -264,9 +308,7 @@ class _HistoryPageState extends State<HistoryPage> {
                         ),
                       ),
                     ),
-                    SizedBox(
-                      width: 15,
-                    )
+                    SizedBox(width: 15,),
                   ],
                 ),
               ],

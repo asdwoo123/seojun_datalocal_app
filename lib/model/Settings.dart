@@ -57,19 +57,22 @@ class Remote {
   String start = '';
   String reset = '';
   String stop = '';
+  String light = '';
   TextEditingController startController = TextEditingController();
   TextEditingController resetController = TextEditingController();
   TextEditingController stopController = TextEditingController();
+  TextEditingController lightController = TextEditingController();
 
   Remote.fromJson(Map<String, dynamic> json) {
     active = json['active'];
     start = json['start'];
     reset = json['reset'];
     stop = json['stop'];
+    light = json['light'];
   }
 
   Map<String, dynamic> toJson() =>
-      {'active': active, 'start': start, 'reset': reset, 'stop': stop};
+      {'active': active, 'start': start, 'reset': reset, 'stop': stop, 'light': light};
 }
 
 class Save {
@@ -81,7 +84,7 @@ class Save {
   TextEditingController completeController = TextEditingController();
 
   Save.fromJson(Map<String, dynamic> json) {
-    active = json['active'];
+   active = json['active'];
     table = json['table'];
     complete = json['complete'];
     if (json['fields'] != null) {
