@@ -34,14 +34,12 @@ class Station {
 class StationData {
   late String name;
   late String nodeId;
-  late bool activate;
 
   StationData.fromJson(Map<String, dynamic> json) {
     name = json['name'];
     nodeId = json['nodeId'];
-    activate = json['value'];
   }
 
   Map<String, dynamic> toJson() =>
-      {'name': name, 'nodeId': nodeId, 'actiavte': activate};
+      {'name': name, 'nodeId': nodeId};
 }
