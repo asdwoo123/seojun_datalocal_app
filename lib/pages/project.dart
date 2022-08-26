@@ -1,8 +1,8 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 import 'package:seojun_datalocal_app/components/Custom_FormField.dart';
@@ -11,6 +11,9 @@ import 'package:seojun_datalocal_app/model/Settings.dart';
 import 'package:seojun_datalocal_app/theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:seojun_datalocal_app/service/index.dart';
+import 'package:lan_scanner/lan_scanner.dart';
+import 'package:flutter_nsd/flutter_nsd.dart';
+import 'package:toast/toast.dart';
 
 
 class ProjectPage extends StatefulWidget {
@@ -26,11 +29,13 @@ class _ProjectPageState extends State<ProjectPage> {
   String _password = '';
   bool _isCamera = true;
   bool _isRemote = true;
+  bool _scanning = false;
   List<dynamic> _stationData = [];
   bool _create = true;
   String title = '새 프로젝트';
   int _currentIndex = 0;
   bool _isConnect = false;
+  FlutterNsd? flutterNsd;
   Map<String, dynamic> _userMap = {'project': []};
   final TextEditingController _stationNameController = TextEditingController();
   final TextEditingController _connectIpController = TextEditingController();
@@ -64,14 +69,12 @@ class _ProjectPageState extends State<ProjectPage> {
 
   void _saveStation() async {
     if (_stationName == '') {
-      Fluttertoast.showToast(
-        msg: '이름을 입력해주세요.',
-      );
+      Toast.show('Enter a project name.', duration: Toast.lengthShort, gravity:  Toast.bottom);
       return;
     }
 
     if (_isConnect == false) {
-      Fluttertoast.showToast(msg: '연결을 확인해주세요.');
+      Toast.show('Please check the connection.', duration: Toast.lengthShort, gravity:  Toast.bottom);
       return;
     }
 
@@ -87,9 +90,7 @@ class _ProjectPageState extends State<ProjectPage> {
     if (_create) {
       for (var station in _userMap['project']) {
         if (_stationName == station['stationName']) {
-          Fluttertoast.showToast(
-            msg: '이미 존재하는 이름입니다.',
-          );
+          Toast.show('This is a project name that already exists.', duration: Toast.lengthShort, gravity:  Toast.bottom);
           return;
         }
       }
@@ -109,20 +110,37 @@ class _ProjectPageState extends State<ProjectPage> {
   void _saveProject() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('user', jsonEncode(_userMap));
-    Fluttertoast.showToast(
-      msg: '저장되었습니다.',
-    );
+    Toast.show("has been saved.", duration: Toast.lengthShort, gravity:  Toast.bottom);
+  }
+
+  void initNsd() async {
+    flutterNsd = FlutterNsd();
+    flutterNsd!.stream.listen((nsdServiceInfo) {
+      print('Discovered service name: ${nsdServiceInfo.name}');
+      print('Discovered service hostname/IP: ${nsdServiceInfo.hostname}');
+      print('Discovered service port: ${nsdServiceInfo.port}');
+    }, onError: (e) {
+      if (e is NsdError) {
+        print(NsdError);
+      }
+    });
   }
 
   @override
   void initState() {
     _getUser();
+    initNsd();
     super.initState();
+  }
+
+
+  Future _searchNet() async {
+    await flutterNsd!.discoverServices('_http._tcp');
   }
 
   void _connectStation(StateSetter _setState) async {
     var url = (_connectIp.contains(':')) ? 'http://' + _connectIp + '/setting?password=' + _password : 'http://seojun.ddns.net/setting?password=' + _password + '&id=' + _connectIp;
-    print(url);
+
     var res =
         await http.read(Uri.parse(url));
     var parsed = json.decode(res);
@@ -133,9 +151,9 @@ class _ProjectPageState extends State<ProjectPage> {
         _isRemote = parsed['remote'];
         _isConnect = true;
       });
-      Fluttertoast.showToast(msg: '연결이 확인되었습니다.');
+      Toast.show("Connection confirmed.", duration: Toast.lengthShort, gravity:  Toast.bottom);
     } else {
-      Fluttertoast.showToast(msg: '비밀번호를 확인해주세요.');
+      Toast.show("Please confirm your password.", duration: Toast.lengthShort, gravity:  Toast.bottom);
     }
   }
 
@@ -223,6 +241,26 @@ class _ProjectPageState extends State<ProjectPage> {
                                     _connectIp = '';
                                   });
                                 })),
+                        SizedBox(
+                          width: 10,
+                        ),
+                        SizedBox(
+                          width: 48,
+                          height: 48,
+                          child: ElevatedButton(
+                            onPressed: _searchNet,
+                            child: const Icon(
+                              Icons.search_sharp,
+                              size: 20
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              primary: primaryBlue,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(24)
+                              )
+                            ),
+                          ),
+                        )
                       ],
                     ),
                     SizedBox(

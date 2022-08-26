@@ -296,7 +296,7 @@ class _HistoryPageState extends State<HistoryPage> {
                             myFuture = _getData();
                           });
                         },
-                        child: Icon(
+                        child: const Icon(
                           Icons.search_sharp,
                           size: 20,
                         ),

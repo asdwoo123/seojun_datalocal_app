@@ -5,7 +5,6 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/painting.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:seojun_datalocal_app/service/socketsPoket.dart';
@@ -16,7 +15,7 @@ import 'package:flutter_mjpeg/flutter_mjpeg.dart';
 import 'package:http/http.dart' as http;
 import 'package:adaptive_action_sheet/adaptive_action_sheet.dart';
 import 'package:seojun_datalocal_app/service/index.dart';
-import 'package:seojun_datalocal_app/service/socketsPoket.dart';
+import 'package:toast/toast.dart';
 
 import '../model/Station.dart';
 
@@ -176,7 +175,7 @@ class _MonitorPageState extends State<MonitorPage> {
     http.Response response = await http.post(Uri.parse(connectUrl),
         headers: {'Content-Type': 'application/json'}, body: jsonEncode(data));
 
-    Fluttertoast.showToast(msg: jsonDecode(response.body)['message']);
+    Toast.show(jsonDecode(response.body)['message'], duration: Toast.lengthShort, gravity:  Toast.bottom);
   }
 
   void _showRemoteSheet(String connectIp) {

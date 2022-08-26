@@ -4,6 +4,7 @@ import 'package:seojun_datalocal_app/pages/monitor.dart';
 import 'package:seojun_datalocal_app/pages/project.dart';
 import 'package:seojun_datalocal_app/pages/setting.dart';
 import 'package:seojun_datalocal_app/theme.dart';
+import 'package:toast/toast.dart';
 
 List<Widget> widgetOptions = [
   MonitorPage(),
@@ -27,6 +28,12 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       _selectedIndex = index;
     });
+  }
+
+  @override
+  void initState() {
+    ToastContext().init(context);
+    super.initState();
   }
 
   @override

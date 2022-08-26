@@ -1,10 +1,10 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
 import 'package:seojun_datalocal_app/model/Settings.dart';
 import 'package:seojun_datalocal_app/service/index.dart';
+import 'package:toast/toast.dart';
 
 import '../components/Custom_FormField.dart';
 import '../components/Custom_label.dart';
@@ -78,9 +78,9 @@ class _SettingPageState extends State<SettingPage> {
     var parsed = json.decode(res.body);
     var success = parsed['success'];
     if (success) {
-      Fluttertoast.showToast(msg: '저장되었습니다.');
+      Toast.show("Saved.", duration: Toast.lengthShort, gravity:  Toast.bottom);
     } else {
-      Fluttertoast.showToast(msg: '저장에 실패했습니다.');
+      Toast.show("Failed to save.", duration: Toast.lengthShort, gravity:  Toast.bottom);
     }
   }
 
